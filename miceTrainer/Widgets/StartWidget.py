@@ -128,9 +128,10 @@ class StartWidget(QWidget):
 
         self.main_window_reference.set_status_bar_message("Connection successful")
 
-        self.main_window_reference.set_to_control_panel()
-    
+        self.main_window_reference.set_to_control_panel(int(self.timer_QLineEdit.text()), int(self.trial_QLineEdit.text()))
+ 
         self.main_window_reference.showMaximized()
+        self.main_window_reference.set_status_bar_message("")
 
         #except Exception as e:
          #   self.main_window_reference.set_status_bar_message(str(e).split(':')[0])
