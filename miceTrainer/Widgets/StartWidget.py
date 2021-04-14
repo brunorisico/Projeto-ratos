@@ -12,7 +12,6 @@ Only tested on Windows and will probably only work on windows unless the search 
 """
 
 from PyQt5.QtWidgets import  QGridLayout, QWidget, QPushButton, QComboBox, QLabel, QLineEdit
-from Widgets.Threads.SerialReaderThread import SerialReaderThread
 
 import serial.tools.list_ports
 import serial
@@ -122,16 +121,10 @@ class StartWidget(QWidget):
         self.main_window_reference.set_status_bar_message("Trying to connect to Arduino using port {}".format(self.selected_com_port))
         serial_connection = serial.Serial(self.selected_com_port, 115200, timeout=0)
 
-        self.serialReadThread = SerialReaderThread(self, serial_connection)
-        #self.serialReadThread.signal.connect(thread_test)
-        self.serialReadThread.start()
-
-        self.main_window_reference.set_status_bar_message("Connection successful")
-
-        self.main_window_reference.set_to_control_panel(int(self.timer_QLineEdit.text()), int(self.trial_QLineEdit.text()))
+        self.main_window_reference.set_to_control_panel(int(self.timer_QLineEdit.text()), int(self.trial_QLineEdit.text()), serial_connection)
  
         self.main_window_reference.showMaximized()
-        self.main_window_reference.set_status_bar_message("")
+        self.main_window_reference.set_status_bar_message("If you found any problem you can contact me using my personal email - brunorisico@gmail.com")
 
         #except Exception as e:
          #   self.main_window_reference.set_status_bar_message(str(e).split(':')[0])

@@ -36,9 +36,9 @@ class Mice(QMainWindow):
     def set_status_bar_message(self, message):
         self.statusBar().showMessage(message)
 
-    def set_to_control_panel(self, timer, trials):
+    def set_to_control_panel(self, timer, trials, serial_connection):
         self.setCentralWidget(self.control_panel_widget)
-        self.control_panel_widget.setTimerTrial(timer, trials)
+        self.control_panel_widget.setTimerTrialConnection(timer, trials, serial_connection)
 
 
     # def closeEvent(self, event):
