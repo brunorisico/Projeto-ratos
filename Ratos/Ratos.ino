@@ -54,37 +54,43 @@ void setup() {
 
 void loop() {
   if (python_start == true) {
-    Serial.println("A iniciar o loop");
+    //Serial.println("A iniciar o loop");
     
     //Antes do ITI start
     //Ligar a luz da caixa  
-    digitalWrite(HL_LED_PIN, HIGH);
+    //digitalWrite(HL_LED_PIN, HIGH);
     
     //dispensar um pellete
     //step 25 equivale a 45 graus ja que temos 8 buracos para dispensar comida...
-    myMotor->step(25, FORWARD, SINGLE); 
-    Serial.println("Pellet teoricamente dispensado");
+    //myMotor->step(25, FORWARD, SINGLE); 
+    //Serial.println("Pellet teoricamente dispensado");
+
+    
+    //if (digitalRead(FEEDER_SENSOR_PIN)== 0){
+     // Serial.println("Olasodloaldol");
+    //}
+//
     
     // o pellete ao passar tem de quebrar o breaker beam e o sensor ficar low
-    do {
-      sensorStateFeeder = digitalRead(FEEDER_SENSOR_PIN);
-      if (sensorStateFeeder == LOW) {
-          Serial.println("Detetada a passagem do pellet");
-        } else {
-          delay(1);
-          feeder_backup_threshold = feeder_backup_threshold + 1;
-          if(feeder_backup_threshold == 1000) {
-            myMotor->step(25, FORWARD, SINGLE);
-            Serial.println("Mais um pellet..."); 
-            } else if (feeder_backup_threshold == 1001) {
-              resetFunc();
-              }
-        }
-    } while (sensorStateFeeder != LOW);
+//    do {
+//      sensorStateFeeder = digitalRead(FEEDER_SENSOR_PIN);
+//      if (sensorStateFeeder == LOW) {
+//          Serial.println("Detetada a passagem do pellet");
+//        } else {
+//          delay(1);
+//          feeder_backup_threshold = feeder_backup_threshold + 1;
+//          if(feeder_backup_threshold == 1000) {
+//            myMotor->step(25, FORWARD, SINGLE);
+//            Serial.println("Mais um pellet..."); 
+//            } else if (feeder_backup_threshold == 1001) {
+//              resetFunc();
+//              }
+//        }
+//    } while (sensorStateFeeder != LOW);
     
     
-    delay(50000);
+    //delay(500);
     
-    digitalWrite(LL_LED_PIN, HIGH);
+    //digitalWrite(LL_LED_PIN, HIGH);
   }
 }

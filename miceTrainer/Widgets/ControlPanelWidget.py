@@ -17,7 +17,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from Widgets.Threads.SerialReaderThread import SerialReaderThread
+from Widgets.Threads.SerialThread import SerialThread
 
 class ControlPanelWidget(QWidget):
     """ 
@@ -33,7 +33,7 @@ class ControlPanelWidget(QWidget):
 
         self.register_values = [0,0,0,0]
 
-        self.start_button_pressed = False
+        self.serialThread = ""
 
         # ------------------------------- TOP LEFT ------------------------------------
         # group of buttons to control the experiment
@@ -45,19 +45,6 @@ class ControlPanelWidget(QWidget):
         self.start_button.setFixedHeight(50)
         self.start_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay')))
         self.start_button.clicked.connect(self.startTimer)
-
-        # stop button
-        self.stop_button = QPushButton('Stop', self)
-        self.stop_button.setFixedHeight(50)
-        self.stop_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaStop')))
-        self.stop_button.clicked.connect(self.endTimer)
-        self.stop_button.setEnabled(False)
-
-        # next trial button
-        self.next_button = QPushButton('Next trial', self)
-        self.next_button.setFixedHeight(50)
-        self.next_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaSkipForward')))
-        #self.next_button.clicked.connect(self.load_data)
 
         # -------------- TIMER ------------------------------
         timer_groupbox = QGroupBox("Timer")
@@ -94,7 +81,7 @@ class ControlPanelWidget(QWidget):
         self.house_led_label.setAlignment(Qt.AlignCenter)
         self.house_led_label.setFont(QFont('Arial', 16))
 
-        self.left_led_label = QLabel('Left led (feeder)')
+        self.left_led_label = QLabel('Left led')
         self.left_led_label.setAlignment(Qt.AlignCenter)
         self.left_led_label.setFont(QFont('Arial', 16))
 
@@ -104,11 +91,11 @@ class ControlPanelWidget(QWidget):
         
         # illustration purposes only
         self.house_led = Led(self, on_color=Led.white, shape=Led.circle)
-        self.house_led.setFixedSize(200, 200)
+        self.house_led.setFixedSize(150, 150)
         self.left_led = Led(self, on_color=Led.green, shape=Led.circle)
-        self.left_led.setFixedSize(200, 200)
+        self.left_led.setFixedSize(150, 150)
         self.right_led = Led(self, on_color=Led.red, shape=Led.circle)
-        self.right_led.setFixedSize(200, 200)
+        self.right_led.setFixedSize(150, 150)
 
         leds_layout = QGridLayout()
         leds_layout.addWidget(self.house_led_label, 1, 0)
@@ -121,20 +108,47 @@ class ControlPanelWidget(QWidget):
 
         leds_groupbox.setLayout(leds_layout)
 
-        #self.left_led.set_status(True)
+        # ----------------------- SENSORS ------------------------
+        sensors_groupbox = QGroupBox("Sensors")
+
+        self.feeder_sensor_label = QLabel('Feeder sensor')
+        self.feeder_sensor_label.setAlignment(Qt.AlignCenter)
+        self.feeder_sensor_label.setFont(QFont('Arial', 12))
+
+        self.left_sensor_label = QLabel('Left sensor')
+        self.left_sensor_label.setAlignment(Qt.AlignCenter)
+        self.left_sensor_label.setFont(QFont('Arial', 12))
+
+        self.right_sensor_label = QLabel('Right sensor')
+        self.right_sensor_label.setAlignment(Qt.AlignCenter)
+        self.right_sensor_label.setFont(QFont('Arial', 12))
+        
+        # illustration purposes only
+        self.feeder_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.feeder_sensor.set_status(True)
+        self.left_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.left_sensor.set_status(True)
+        self.right_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.right_sensor.set_status(True)
+
+        sensors_layout = QGridLayout()
+        sensors_layout.addWidget(self.feeder_sensor_label, 1, 0)
+        sensors_layout.addWidget(self.left_sensor_label, 1, 1)
+        sensors_layout.addWidget(self.right_sensor_label, 1, 2)
+
+        sensors_layout.addWidget(self.feeder_sensor, 2, 0)
+        sensors_layout.addWidget(self.left_sensor, 2, 1)
+        sensors_layout.addWidget(self.right_sensor, 2, 2)
+
+        sensors_groupbox.setLayout(sensors_layout)
 
         # layout
         experiment_control_layout = QGridLayout()
-        experiment_control_layout.addWidget(self.start_button, 1, 0)
-        experiment_control_layout.addWidget(self.stop_button, 1, 1)
-        experiment_control_layout.addWidget(self.next_button, 1, 2)
+        experiment_control_layout.addWidget(self.start_button, 1, 0, 1, 3)
         experiment_control_layout.addWidget(timer_groupbox, 2, 0, 1, 3)
         experiment_control_layout.addWidget(trials_groupbox, 3, 0, 1, 3)
         experiment_control_layout.addWidget(leds_groupbox, 4, 0, 1, 3)
-
-        # experiment_control_layout.addWidget(self.house_led, 4, 0)
-        # experiment_control_layout.addWidget(self.left_led, 4, 1)
-        # experiment_control_layout.addWidget(self.right_led, 4, 2)
+        experiment_control_layout.addWidget(sensors_groupbox, 5, 0, 1, 3)
         experiment_groupbox.setLayout(experiment_control_layout) 
 
         # ------------------------------- TOP RIGHT (BarPlot) ------------------------------------
@@ -144,6 +158,7 @@ class ControlPanelWidget(QWidget):
         self.left_right_splitter = QSplitter(Qt.Horizontal)
         self.left_right_splitter.addWidget(experiment_groupbox)
         self.left_right_splitter.addWidget(self.barplot)
+        self.left_right_splitter.setStretchFactor(1, 500)
 
         # ---------------------- TERMINAL -  BOTTOM ------------------------------
         self.terminal = TerminalWidget(self)
@@ -172,17 +187,10 @@ class ControlPanelWidget(QWidget):
             self.start_button.setEnabled(False)
 
     def startTimer(self):
-        self.start_button_pressed = True
-        self.timer.start(1000)
+        self.serialThread.start_trial()
+        #self.timer.start(1000)
         self.timer_label.setStyleSheet("QLabel {color: green; background-color: black;}")
         self.start_button.setEnabled(False)
-        self.stop_button.setEnabled(True)
-
-    def endTimer(self):
-        self.timer.stop()
-        self.start_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
-        self.start_pressed = False
 
     def setTimerTrialConnection(self, timer, trial, serial_connection):
         self.timer_value_seconds = timer
@@ -193,54 +201,65 @@ class ControlPanelWidget(QWidget):
             print(value)
             # I hate to do chained if else but it is the only way I can do this in a short time
             # does not matter muc anyway since this is only for illustration purposes only
-            # the data is being recorded directly in the SerialReaderThread for precision
+            # the data is being recorded directly in the SerialThread for precision
+            if value == 'start':
+                self.timer.start(1000)
 
-            if self.start_button_pressed and value != "start":
-                self.serial_connection.write(bytes("start", 'utf-8'))
-            elif self.start_button_pressed and value == "start":
+            # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
+            if value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
+                self.current_trial_value = self.current_trial_value + 1   
+                if self.current_trial_value > self.trials_value:
+                    self.timer.stop()
+                    self.start_button.setEnabled(False)
+                    print("IMPLEMENTAR FIM EXPERIENCIA")
+                else:
+                    self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
+                    if value == 'PR':
+                        self.register_values[0] = self.register_values[0] + 1
+                        response = "premature response"         
+                    elif value == 'OR':
+                        self.register_values[1] = self.register_values[1] + 1
+                        response = "omission response" 
+                    elif value == 'TR':
+                        self.register_values[2] = self.register_values[2] + 1
+                        response = "timed response" 
+                    elif value == 'SR':
+                        self.register_values[3] = self.register_values[3] + 1
+                        response = "perserverant response" 
 
-                # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
-                if value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
-                    self.current_trial_value = self.current_trial_value + 1   
-                    if self.current_trial_value > self.trials_value:
-                        self.endTimer()
-                        self.start_button.setEnabled(False)
-                        print("IMPLEMENTAR FIM EXPERIENCIA")
-                    else:
-                        self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
-                        if value == 'PR':
-                            self.register_values[0] = self.register_values[0] + 1
-                            response = "premature response"         
-                        elif value == 'OR':
-                            self.register_values[1] = self.register_values[1] + 1
-                            response = "omission response" 
-                        elif value == 'TR':
-                            self.register_values[2] = self.register_values[2] + 1
-                            response = "timed response" 
-                        elif value == 'SR':
-                            self.register_values[3] = self.register_values[3] + 1
-                            response = "perserverant response" 
+                    self.barplot.bar_plot(self.register_values)
+                    new_line_after_trial = '\n' + '-----' * 10
+                    self.terminal.storeText("Trial {} ended up with a {}{}".format(self.current_trial_value, response, new_line_after_trial))
+                    self.terminal.displayText()
 
-                        self.barplot.bar_plot(self.register_values)
-                        new_line_after_trial = '\n' + '-----' * 10
-                        self.terminal.storeText("Trial {} out of {} ended up with a {}{}".format(self.current_trial_value, self.trials_value, response, new_line_after_trial))
-                        self.terminal.displayText()
+            # turn leds on and off in the GUI
+            elif "ON" in value:
+                light_status = "ON"
+                if value == 'HL_ON':
+                    self.house_led.set_status(True)
+                    light_name = "House light"
+                elif value == 'LL_ON':
+                    self.left_led.set_status(True)
+                    light_name = "Left light"
+                elif value == 'RL_ON':
+                    self.right_led.set_status(True)
+                    light_name = "Right light"
+                self.terminal.storeText("Trial {} out of {}. {} {}".format(self.current_trial_value, self.trials_value, light_name, light_status))
+                self.terminal.displayText()
 
-                # turn leds on and off in the GUI
-                elif "ON" in value:
-                    if value == 'HL_ON':
-                        self.house_led.set_status(True)
-                    elif value == 'LL_ON':
-                        self.left_led.set_status(True)
-                    elif value == 'RL_ON':
-                        self.right_led.set_status(True)
-                elif "OFF" in value:
-                    if value == 'HL_OFF':
-                        self.house_led.set_status(False)
-                    elif value == 'LL_OFF':
-                        self.left_led.set_status(False)
-                    elif value == 'RL_OFF':
-                        self.right_led.set_status(False)
+            elif "OFF" in value:
+                light_status = "OFF"
+                if value == 'HL_OFF':
+                    self.house_led.set_status(False)
+                    light_name = "House light"
+                elif value == 'LL_OFF':
+                    self.left_led.set_status(False)
+                    light_name = "Left light"
+                elif value == 'RL_OFF':
+                    self.right_led.set_status(False)
+                    light_name = "Right light"         
+                self.terminal.storeText("Trial {} out of {}. {} {}".format(self.current_trial_value, self.trials_value, light_name, light_status))
+                self.terminal.displayText()
 
                     
         # set trial and timer values
@@ -250,9 +269,9 @@ class ControlPanelWidget(QWidget):
         self.trials_label.setText("1 out of {}".format(self.trials_value))
 
         # start reading the serial connection
-        self.serialReadThread = SerialReaderThread(self, serial_connection)
-        self.serialReadThread.signal.connect(thread_control)
-        self.serialReadThread.start()
+        self.serialThread = SerialThread(self, serial_connection)
+        self.serialThread.signal.connect(thread_control)
+        self.serialThread.start()
 
 class TerminalWidget(QTextEdit):
     def __init__(self, parent):
