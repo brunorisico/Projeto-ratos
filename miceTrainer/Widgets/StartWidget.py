@@ -60,6 +60,7 @@ class StartWidget(QWidget):
         self.connect_btn = QPushButton('Connect', self)
         self.connect_btn.setFixedHeight(50)
         self.connect_btn.clicked.connect(self.connect_pressed)
+        self.connect_btn.setEnabled(False)
 
 
         self.menu_layout.addWidget(self.search_COM_btn, 0, 0)
@@ -93,8 +94,9 @@ class StartWidget(QWidget):
         # sets the first door found as default
         try:
             self.selected_com_port = self.available_com_ports_with_arduino[0][0]
+            self.connect_btn.setEnabled(True)
         except:
-            pass
+            self.connect_btn.setEnabled(False)
             
     def new_com_selected(self, order):   
         """

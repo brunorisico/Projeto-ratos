@@ -11,20 +11,29 @@ class SerialThread(QThread):
 
         self.arduino_connection = arduino_connection
         self.buffer = ''
-        self.expected_strings = ['PR', 'OR', 'TR', 'SR', 'HL_ON', 'LL_ON', 'RL_ON', 'HL_OFF', 'LL_OFF', 'RL_OFF', 'start', 'MO', 'ITIS', 'DS']
+        self.expected_strings = ['HL_ON','HL_OFF', 
+                                 'LL_ON', 'LL_OFF', 
+                                 'RL_ON', 'RL_OFF',
+                                 'PR', 'OR', 'TR',
+                                 'ITIS', 'DS', 'MO',
+                                 'FSA', 'FSR', 'LSA',
+                                 'LSR', 'RSA', 'RSR', 
+                                 'SA']
 
-    def run(self): 
+        self.trial = 1
+
+    def run(self):
         while True:
-            # need to create a buffer to avoid getting just partial strings
             if self.start_signal:
-                while self.arduino_connection.readline().decode("utf-8").strip() != "start":
-                    print('Acorda Arduino!!!!!')
+                while self.arduino_connection.readline().decode("utf-8").strip() != "SA":
+                    print('Trying to start Arduino')
                     self.arduino_connection.write(bytes("start", 'utf-8'))
                     self.start_signal = False
                 self.signal.emit("ITIS")
             else:
                 decodedStream = self.arduino_connection.readline().decode("utf-8").strip()
                 if decodedStream != '':
+                    # need to create a buffer to avoid getting just partial strings
                     self.buffer = self.buffer + decodedStream
 
                     if self.buffer in self.expected_strings:

@@ -225,7 +225,7 @@ class ControlPanelWidget(QWidget):
                         response = "timed response" 
                     elif value == 'SR':
                         self.register_values[3] = self.register_values[3] + 1
-                        response = "perserverant response" 
+                        response = "perseverant response" 
 
                     self.barplot.bar_plot(self.register_values)
                     new_line_after_trial = '\n' + '-----' * 10
