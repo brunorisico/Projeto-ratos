@@ -29,7 +29,7 @@ class ControlPanelWidget(QWidget):
         #timer and trial
         self.timer_value_seconds = 0
         self.trials_value = 0
-        self.current_trial_value = 1
+        self.current_trial_value = 0
 
         self.register_values = [0,0,0,0]
 
@@ -178,13 +178,14 @@ class ControlPanelWidget(QWidget):
         self.setLayout(layout)
  
     def showTime(self):
+        print(self.timer_value_seconds)
         if self.timer_value_seconds != 0:
             self.timer_value_seconds = self.timer_value_seconds - 1
             time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
             self.timer_label.setText(time)
         else:
-            self.endTimer()
-            self.start_button.setEnabled(False)
+            self.timer.stop()
+            #self.start_button.setEnabled(False)
 
     def startTimer(self):
         self.serialThread.start_trial()
@@ -200,13 +201,23 @@ class ControlPanelWidget(QWidget):
         def thread_control(value):
             print(value)
             # I hate to do chained if else but it is the only way I can do this in a short time
-            # does not matter muc anyway since this is only for illustration purposes only
+            # does not matter anyway since this is only for illustration purposes
             # the data is being recorded directly in the SerialThread for precision
-            if value == 'start':
+            if value == 'DS':
                 self.timer.start(1000)
+                self.terminal.storeText("Delay started")
+                self.terminal.displayText()
+
+            elif value == 'FSF':
+                self.timer.stop()
+                self.start_button.setEnabled(True)
+                self.terminal.storeText("Feeder sensor failed at trial {} out of {}".format(self.current_trial_value, self.trials_value))
+                self.terminal.storeText("Arduino has been stoped and reset")
+                self.terminal.displayText()
+
 
             # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
-            if value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
+            elif value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
                 self.current_trial_value = self.current_trial_value + 1   
                 if self.current_trial_value > self.trials_value:
                     self.timer.stop()
@@ -266,7 +277,7 @@ class ControlPanelWidget(QWidget):
         time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
         self.timer_label.setText(time)
 
-        self.trials_label.setText("1 out of {}".format(self.trials_value))
+        self.trials_label.setText("0 out of {}".format(self.trials_value))
 
         # start reading the serial connection
         self.serialThread = SerialThread(self, serial_connection)

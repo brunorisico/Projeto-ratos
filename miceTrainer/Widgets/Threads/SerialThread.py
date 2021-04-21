@@ -16,7 +16,7 @@ class SerialThread(QThread):
                                  'RL_ON', 'RL_OFF',
                                  'PR', 'OR', 'TR',
                                  'ITIS', 'DS', 'MO',
-                                 'FSA', 'FSR', 'LSA',
+                                 'FSA', 'FSF', 'LSA',
                                  'LSR', 'RSA', 'RSR', 
                                  'SA']
 
@@ -29,7 +29,7 @@ class SerialThread(QThread):
                     print('Trying to start Arduino')
                     self.arduino_connection.write(bytes("start", 'utf-8'))
                     self.start_signal = False
-                self.signal.emit("ITIS")
+                self.signal.emit("SA")
             else:
                 decodedStream = self.arduino_connection.readline().decode("utf-8").strip()
                 if decodedStream != '':
