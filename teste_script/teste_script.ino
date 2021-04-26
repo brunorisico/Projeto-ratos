@@ -160,6 +160,19 @@ void TO_start() {
   } 
 }
 
+void ITI_start(){
+  currentItisStartTimestamp = millis();
+  while ( millis() < currentItisStartTimestamp + 3000) {
+    Serial.println('ITIS');
+    check_right_sensor_activity(); //ve se o rato vai ao sensor da direita mas nao faz nada para alem de registar o evento
+    while (check_left_sensor_activity()){
+      // fica preso aqui ate o rato sair do sensor da esquerda
+      // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
+      currentItisStartTimestamp = millis();      
+    }
+  }
+}
+
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -184,17 +197,7 @@ void loop() {
       check_left_sensor_activity();
     }
     left_light_off();
-
-    currentItisStartTimestamp = millis();
-    while ( millis() < currentItisStartTimestamp + 3000) {
-      Serial.println('ITIS');
-      check_right_sensor_activity(); //ve se o rato vai ao sensor da direita mas nao faz nada para alem de registar o evento
-      while (check_left_sensor_activity()){
-        // fica preso aqui ate o rato sair do sensor da esquerda
-        // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
-        currentItisStartTimestamp = millis();      
-      }
-    }
+    ITI_start();
     delayStarted = true;
   }
   //aqui inicia o Delay start
@@ -261,8 +264,8 @@ void loop() {
               break;
             }
           }
-          // if no sensor activated...
           left_light_off();
+          ITI_start();
           
           break; //get out of the 60 second loop
         }

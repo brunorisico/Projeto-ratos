@@ -38,7 +38,6 @@ class SerialThread(QThread):
 
                     if self.buffer in self.expected_strings:
                         self.signal.emit(self.buffer)
-                        #print(self.buffer)
                         self.buffer = ""
 
     def start_trial(self):
