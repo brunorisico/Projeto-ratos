@@ -14,11 +14,11 @@ class SerialThread(QThread):
         self.expected_strings = ['HL_ON','HL_OFF', 
                                  'LL_ON', 'LL_OFF', 
                                  'RL_ON', 'RL_OFF',
-                                 'PR', 'OR', 'TR',
+                                 'PR', 'OR', 'TR', 'SR',
                                  'ITIS', 'DS', 'MO',
                                  'FSA', 'FSR', 'FSF' 'LSA',
                                  'LSR', 'RSA', 'RSR', 
-                                 'SA']
+                                 'SA', 'TO', 'RTS', 'FTS']
 
         self.trial = 1
 

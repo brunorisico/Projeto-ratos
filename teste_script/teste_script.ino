@@ -20,12 +20,11 @@ int previousSensorStateRightHole = HIGH;
 
 // variables
 int arduinoStartedTimestamp = 0;
+int currentItisStartTimestamp = 0;
 int currentDelayStartTimestamp = 0;
 int currentTimeoutStartTimestamp = 0;
 int currentResponseTimeStartTimestamp = 0;
 int currentFeedingTimeStartTimestamp = 0;
-
-int timeoutStartIncrementValue = 3000;
 
 // stage flags
 bool delayStarted = false; // fica verdadeiro depois do ITIS
@@ -111,24 +110,7 @@ void motor_step_and_detect() {
       feederDelayMs = 2000;
     }
   }  
- }
-
-
-void TO_start() {
-  //TO_start em loop de 3 segundos ate o sensor nao detetar nada
-  currentTimeoutStartTimestamp = millis();
-  timeoutStartIncrementValue = 3000;
-  while ( millis() < currentTimeoutStartTimestamp + timeoutStartIncrementValue) {
-    Serial.println("TO");
-    check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
-    while (check_right_sensor_activity()){
-      // fica preso aqui ate o rato sair do sensor da direita
-      // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
-      timeoutStartIncrementValue = timeoutStartIncrementValue + 3000; 
-    }
-  } 
 }
-
 
 bool check_left_sensor_activity() {
   sensorStateLeftHole = digitalRead(LEFT_HOLE_SENSOR_PIN);
@@ -137,13 +119,14 @@ bool check_left_sensor_activity() {
       Serial.println("LSA");
       previousSensorStateLeftHole = sensorStateLeftHole; 
       return true;
-      }
+     }
     else if (sensorStateLeftHole == HIGH) {
       Serial.println("LSR");
       previousSensorStateLeftHole = sensorStateLeftHole; 
       return false;
-      }  
-  } 
+    }  
+  }
+  return previousSensorStateLeftHole;  
 }
 
 bool check_right_sensor_activity() {
@@ -153,15 +136,31 @@ bool check_right_sensor_activity() {
       Serial.println("RSA");
       previousSensorStateRightHole = sensorStateRightHole; 
       return true;
-      }
+    }
     else if (sensorStateRightHole == HIGH) {
       Serial.println("RSR");
       previousSensorStateRightHole = sensorStateRightHole; 
       return false;
     }  
   } 
+  return previousSensorStateRightHole;
 }
- 
+
+void TO_start() {
+  //TO_start em loop de 3 segundos ate o sensor nao detetar nada
+  currentTimeoutStartTimestamp = millis();
+  while ( millis() < currentTimeoutStartTimestamp + 3000) {
+    Serial.println("TO");
+    check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
+    while (check_right_sensor_activity()){
+      // fica preso aqui ate o rato sair do sensor da direita
+      // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
+      currentTimeoutStartTimestamp = millis();      
+    }
+  } 
+}
+
+
 void setup() {
   Serial.begin(BAUD_RATE);
   Serial.setTimeout(1);
@@ -183,14 +182,21 @@ void loop() {
     while (millis() < arduinoStartedTimestamp + 5000) {
       // 5 segundos para recolher???
       check_left_sensor_activity();
-      }
-      Serial.println('ITIS');
-      while (millis() < arduinoStartedTimestamp + 8000) {
-        check_left_sensor_activity();
-      }
-  delayStarted = true;
-  } 
+    }
+    left_light_off();
 
+    currentItisStartTimestamp = millis();
+    while ( millis() < currentItisStartTimestamp + 3000) {
+      Serial.println('ITIS');
+      check_right_sensor_activity(); //ve se o rato vai ao sensor da direita mas nao faz nada para alem de registar o evento
+      while (check_left_sensor_activity()){
+        // fica preso aqui ate o rato sair do sensor da esquerda
+        // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
+        currentItisStartTimestamp = millis();      
+      }
+    }
+    delayStarted = true;
+  }
   //aqui inicia o Delay start
   else if (delayStarted) {
     currentDelayStartTimestamp = millis();
