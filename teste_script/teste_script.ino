@@ -23,6 +23,7 @@ int arduinoStartedTimestamp = 0;
 int currentDelayStartTimestamp = 0;
 int currentTimeoutStartTimestamp = 0;
 int currentResponseTimeStartTimestamp = 0;
+int currentFeedingTimeStartTimestamp = 0;
 
 int timeoutStartIncrementValue = 3000;
 
@@ -112,6 +113,23 @@ void motor_step_and_detect() {
   }  
  }
 
+
+void TO_start() {
+  //TO_start em loop de 3 segundos ate o sensor nao detetar nada
+  currentTimeoutStartTimestamp = millis();
+  timeoutStartIncrementValue = 3000;
+  while ( millis() < currentTimeoutStartTimestamp + timeoutStartIncrementValue) {
+    Serial.println("TO");
+    check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
+    while (check_right_sensor_activity()){
+      // fica preso aqui ate o rato sair do sensor da direita
+      // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
+      timeoutStartIncrementValue = timeoutStartIncrementValue + 3000; 
+    }
+  } 
+}
+
+
 bool check_left_sensor_activity() {
   sensorStateLeftHole = digitalRead(LEFT_HOLE_SENSOR_PIN);
   if (previousSensorStateLeftHole != sensorStateLeftHole) {
@@ -140,7 +158,7 @@ bool check_right_sensor_activity() {
       Serial.println("RSR");
       previousSensorStateRightHole = sensorStateRightHole; 
       return false;
-      }  
+    }  
   } 
 }
  
@@ -171,37 +189,33 @@ void loop() {
         check_left_sensor_activity();
       }
   delayStarted = true;
-  responseTimeStarted = true;   
-  omissionStarted = true;  
   } 
 
   //aqui inicia o Delay start
   else if (delayStarted) {
     currentDelayStartTimestamp = millis();
     Serial.println('DS');
+
+    //meter isto como true pois podem se tornar false mais a frente consoante as respostas do rato e por isto estar em loop
+    responseTimeStarted = true;   
+    omissionStarted = true;  
     
     // intervalo de 3 segundos depois do Delay start
     // se sensor direita (RS) ativado, Premature Response
     while (millis() < currentDelayStartTimestamp + 3000) {
+      check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
       if (check_right_sensor_activity()){
         //castigo com a luz desligado
         house_light_off();  
         Serial.println('PR');
         
-        //como ha PR nao vamos para as fases seguintes
+        //como ha PR nao vamos para as fases seguintes e isto volta para o delay start apos o TO_start acabar
         responseTimeStarted = false;
         
         //TO_start em loop de 3 segundos ate o sensor nao detetar nada
-        currentTimeoutStartTimestamp = millis();
-        while ( millis() < currentTimeoutStartTimestamp + timeoutStartIncrementValue) {
-          Serial.println("TO");
-          check_left_sensor_activity(); //ve so rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
-          while (check_right_sensor_activity()){
-            // fica preso aqui ate o rato sair do sensor da direita
-            // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
-            timeoutStartIncrementValue = timeoutStartIncrementValue + 3000; 
-          }
-        } 
+        TO_start();
+        //voltar a ligar a luz apos acabar castigo
+        house_light_on();  
       }
     }
     // se o sensor nao foi ativado anterioremente...
@@ -209,21 +223,55 @@ void loop() {
       currentResponseTimeStartTimestamp = millis();
       Serial.println("RTS");
       right_light_on();
+
+      // intervalo de 60 segundos
       while(millis() < currentResponseTimeStartTimestamp + 60000) {
-        check_left_sensor_activity(); //ve so rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
+        check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
         if (check_right_sensor_activity()) {
-          omissionStarted = false;      
-          while (check_right_sensor_activity()){} // espera para que o sensor 3 seja inativado
+          //como ativou esta resposta ja nao vai para o omission response
+          omissionStarted = false;   
+             
+          while (check_right_sensor_activity()){} // espera para que o sensor right (3) seja inativado
           right_light_off();
           motor_step_and_detect();
           left_light_on();
+
+          // feeding time start
+          currentFeedingTimeStartTimestamp = millis();
+          Serial.println("FTS");
+          while(millis() < currentResponseTimeStartTimestamp + 30000) {
+            if (check_right_sensor_activity()) {
+              //Perseverant response
+              Serial.println("SR");
+              while (check_right_sensor_activity()){} // espera para que o sensor right (3) seja inativado
+              
+              // restart do tempo do FTS????
+              currentFeedingTimeStartTimestamp = millis();
+              Serial.println("FTS");
+            }
+            else if (check_left_sensor_activity()) {
+              while (check_left_sensor_activity()){} // espera para que o sensor left (3) seja inativado
+              // break the FDS 30s interval loop
+              break;
+            }
+          }
+          // if no sensor activated...
+          left_light_off();
+          
+          break; //get out of the 60 second loop
         }
       }
-
+      //se enao aconteceu nada nos 60 segundos vem para aqui
       if (omissionStarted) {
-        }    
+        right_light_off();
+        house_light_off(); 
+        
+        //TO_start em loop de 3 segundos ate o sensor nao detetar nada
+        TO_start();
+        house_light_on();
+      }    
     }
- 
+    //como o Arduino funciona em loop isto volta para o delay start se o delayStarted for true
   }  
 }
 
