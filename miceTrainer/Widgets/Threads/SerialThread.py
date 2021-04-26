@@ -16,7 +16,7 @@ class SerialThread(QThread):
                                  'RL_ON', 'RL_OFF',
                                  'PR', 'OR', 'TR',
                                  'ITIS', 'DS', 'MO',
-                                 'FSA', 'FSF', 'LSA',
+                                 'FSA', 'FSR', 'FSF' 'LSA',
                                  'LSR', 'RSA', 'RSR', 
                                  'SA']
 
