@@ -149,8 +149,8 @@ bool check_right_sensor_activity() {
 void TO_start() {
   //TO_start em loop de 3 segundos ate o sensor nao detetar nada
   currentTimeoutStartTimestamp = millis();
+  Serial.println("TO");
   while ( millis() < currentTimeoutStartTimestamp + 3000) {
-    Serial.println("TO");
     check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
     while (check_right_sensor_activity()){
       // fica preso aqui ate o rato sair do sensor da direita
@@ -162,8 +162,8 @@ void TO_start() {
 
 void ITI_start(){
   currentItisStartTimestamp = millis();
+  Serial.println("ITIS");
   while ( millis() < currentItisStartTimestamp + 3000) {
-    Serial.println('ITIS');
     check_right_sensor_activity(); //ve se o rato vai ao sensor da direita mas nao faz nada para alem de registar o evento
     while (check_left_sensor_activity()){
       // fica preso aqui ate o rato sair do sensor da esquerda
@@ -203,7 +203,7 @@ void loop() {
   //aqui inicia o Delay start
   else if (delayStarted) {
     currentDelayStartTimestamp = millis();
-    Serial.println('DS');
+    Serial.println("DS");
 
     //meter isto como true pois podem se tornar false mais a frente consoante as respostas do rato e por isto estar em loop
     responseTimeStarted = true;   
@@ -216,7 +216,7 @@ void loop() {
       if (check_right_sensor_activity()){
         //castigo com a luz desligado
         house_light_off();  
-        Serial.println('PR');
+        Serial.println("PR");
         
         //como ha PR nao vamos para as fases seguintes e isto volta para o delay start apos o TO_start acabar
         responseTimeStarted = false;
@@ -224,7 +224,8 @@ void loop() {
         //TO_start em loop de 3 segundos ate o sensor nao detetar nada
         TO_start();
         //voltar a ligar a luz apos acabar castigo
-        house_light_on();  
+        house_light_on();
+        Serial.println("TE");  
       }
     }
     // se o sensor nao foi ativado anterioremente...
@@ -265,6 +266,7 @@ void loop() {
             }
           }
           left_light_off();
+          Serial.println("TE");
           ITI_start();
           
           break; //get out of the 60 second loop
@@ -272,12 +274,14 @@ void loop() {
       }
       //se enao aconteceu nada nos 60 segundos vem para aqui
       if (omissionStarted) {
+        Serial.println("OR");
         right_light_off();
         house_light_off(); 
         
         //TO_start em loop de 3 segundos ate o sensor nao detetar nada
         TO_start();
         house_light_on();
+        Serial.println("TE");
       }    
     }
     //como o Arduino funciona em loop isto volta para o delay start se o delayStarted for true
