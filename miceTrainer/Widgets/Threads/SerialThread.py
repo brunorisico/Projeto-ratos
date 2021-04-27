@@ -50,8 +50,8 @@ class SerialThread(QThread):
                     self.buffer = self.buffer + decodedStream
 
                     if self.buffer in self.expected_strings:
-                        print(self.buffer)
-                        #self.signal.emit(self.buffer)
+                        #print(self.buffer)
+                        self.signal.emit(self.buffer)
                         self.buffer = ""
 
     def start_trial(self):

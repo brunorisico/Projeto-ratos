@@ -19,12 +19,12 @@ int sensorStateRightHole = HIGH;
 int previousSensorStateRightHole = HIGH;
 
 // variables
-int arduinoStartedTimestamp = 0;
-int currentItisStartTimestamp = 0;
-int currentDelayStartTimestamp = 0;
-int currentTimeoutStartTimestamp = 0;
-int currentResponseTimeStartTimestamp = 0;
-int currentFeedingTimeStartTimestamp = 0;
+unsigned long arduinoStartedTimestamp = 0;
+unsigned long currentItisStartTimestamp = 0;
+unsigned long currentDelayStartTimestamp = 0;
+unsigned long currentTimeoutStartTimestamp = 0;
+unsigned long currentResponseTimeStartTimestamp = 0;
+unsigned long currentFeedingTimeStartTimestamp = 0;
 
 // stage flags
 bool delayStarted = false; // fica verdadeiro depois do ITIS
@@ -32,8 +32,8 @@ bool responseTimeStarted = true;
 bool omissionStarted = true;
 
 // motor time variables
-int timeDelayFeederSensor = 0;
-int feederDelayMs = 1000;
+unsigned long timeDelayFeederSensor = 0;
+unsigned long feederDelayMs = 1000;
 
 // valores recomendados para a baud rate, quanto mais alto mais rapido, mas nao abusar
 // 200, 2400, 4800, 19200, 38400, 57600 e 115200.
@@ -285,7 +285,7 @@ void loop() {
       }    
     }
     //como o Arduino funciona em loop isto volta para o delay start se o delayStarted for true
-  }  
+  }
 }
 
   

@@ -178,7 +178,7 @@ class ControlPanelWidget(QWidget):
         self.setLayout(layout)
  
     def showTime(self):
-        print(self.timer_value_seconds)
+        #print(self.timer_value_seconds)
         if self.timer_value_seconds != 0:
             self.timer_value_seconds = self.timer_value_seconds - 1
             time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
@@ -207,41 +207,34 @@ class ControlPanelWidget(QWidget):
                 self.timer.start(1000)
                 self.terminal.storeText("Delay started")
                 self.terminal.displayText()
-
+                
             elif value == 'FSF':
                 self.timer.stop()
                 self.start_button.setEnabled(True)
                 self.terminal.storeText("Feeder sensor failed at trial {} out of {}".format(self.current_trial_value, self.trials_value))
                 self.terminal.storeText("Arduino has been stoped and reset")
                 self.terminal.displayText()
-
-
+   
             # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
             elif value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
-                self.current_trial_value = self.current_trial_value + 1   
-                if self.current_trial_value > self.trials_value:
-                    self.timer.stop()
-                    self.start_button.setEnabled(False)
-                    print("IMPLEMENTAR FIM EXPERIENCIA")
-                else:
-                    self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
-                    if value == 'PR':
-                        self.register_values[0] = self.register_values[0] + 1
-                        response = "premature response"         
-                    elif value == 'OR':
-                        self.register_values[1] = self.register_values[1] + 1
-                        response = "omission response" 
-                    elif value == 'TR':
-                        self.register_values[2] = self.register_values[2] + 1
-                        response = "timed response" 
-                    elif value == 'SR':
-                        self.register_values[3] = self.register_values[3] + 1
-                        response = "perseverant response" 
+                self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
+                if value == 'PR':
+                    self.register_values[0] = self.register_values[0] + 1
+                    response = "premature response"         
+                elif value == 'OR':
+                    self.register_values[1] = self.register_values[1] + 1
+                    response = "omission response" 
+                elif value == 'TR':
+                    self.register_values[2] = self.register_values[2] + 1
+                    response = "timed response" 
+                elif value == 'SR':
+                    self.register_values[3] = self.register_values[3] + 1
+                    response = "perseverant response" 
 
-                    self.barplot.bar_plot(self.register_values)
-                    new_line_after_trial = '\n' + '-----' * 10
-                    self.terminal.storeText("Trial {} ended up with a {}{}".format(self.current_trial_value, response, new_line_after_trial))
-                    self.terminal.displayText()
+                self.barplot.bar_plot(self.register_values)
+                new_line_after_trial = '\n' + '-----' * 10
+                self.terminal.storeText("Trial {} ended up with a {}{}".format(self.current_trial_value, response, new_line_after_trial))
+                self.terminal.displayText()
 
             # turn leds on and off in the GUI
             elif "ON" in value:
@@ -272,7 +265,14 @@ class ControlPanelWidget(QWidget):
                 self.terminal.storeText("Trial {} out of {}. {} {}".format(self.current_trial_value, self.trials_value, light_name, light_status))
                 self.terminal.displayText()
 
-                    
+            # trial end signal
+            elif value == 'TE':
+                self.current_trial_value = self.current_trial_value + 1
+                if self.current_trial_value > self.trials_value: 
+                    self.timer.stop()
+                    self.start_button.setEnabled(False)
+                    print("IMPLEMENTAR FIM EXPERIENCIA")
+
         # set trial and timer values
         time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
         self.timer_label.setText(time)
