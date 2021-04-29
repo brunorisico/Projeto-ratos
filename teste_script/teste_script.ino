@@ -12,11 +12,10 @@
 #define RIGHT_HOLE_SENSOR_PIN 5
 
 // sensor states init
-int sensorStateFeeder = HIGH;
-int sensorStateLeftHole = HIGH;
-int previousSensorStateLeftHole = HIGH;
-int sensorStateRightHole = HIGH;
-int previousSensorStateRightHole = HIGH;
+int sensorStateFeeder = 1;
+
+int sensorStateLeftHole = 1, previousSensorStateLeftHole = 0;
+int sensorStateRightHole = 1, previousSensorStateRightHole = 0;
 
 // variables
 unsigned long arduinoStartedTimestamp = 0;
@@ -86,20 +85,23 @@ void motor_step_and_detect() {
   myMotor->step(25, FORWARD, SINGLE);
   Serial.println("MO");
   timeDelayFeederSensor = millis();
-     
-  while (sensorStateFeeder == HIGH) {
-    //sensorStateFeeder = digitalRead(FEEDER_SENSOR_PIN);
-    sensorStateFeeder  = LOW; //APAGAR ISTO DEPOIS, SO PARA TESTES!!!!
-    if (sensorStateFeeder == LOW) {
+
+  while (sensorStateFeeder == 1) {
+    sensorStateFeeder = digitalRead(FEEDER_SENSOR_PIN);
+
+    if (sensorStateFeeder == 0) {
       Serial.println("FSA");
-      if (digitalRead(FEEDER_SENSOR_PIN == HIGH)) {
+      if (digitalRead(sensorStateFeeder == 1)) {
         Serial.println("FSR");
+        sensorStateFeeder = 1;
+        break;
         }
       }
     else if (millis() > timeDelayFeederSensor + feederDelayMs) {
       if (feederDelayMs == 2000) {
         //failed after 2 seconds stop signal computer and reset arduino
         Serial.println("FSF");
+        //ou break;
         delay(1000); //make sure arduino prints the FSF signal before reseting
         resetFunc();
         }
@@ -114,36 +116,31 @@ void motor_step_and_detect() {
 
 bool check_left_sensor_activity() {
   sensorStateLeftHole = digitalRead(LEFT_HOLE_SENSOR_PIN);
-  if (previousSensorStateLeftHole != sensorStateLeftHole) {
-    if (sensorStateLeftHole == LOW) {
-      Serial.println("LSA");
-      previousSensorStateLeftHole = sensorStateLeftHole; 
-      return true;
-     }
-    else if (sensorStateLeftHole == HIGH) {
-      Serial.println("LSR");
-      previousSensorStateLeftHole = sensorStateLeftHole; 
-      return false;
-    }  
-  }
-  return previousSensorStateLeftHole;  
+  // se rato no sensor --> sensor inter devolve 0 -->  sensor true
+  if (!sensorStateLeftHole && previousSensorStateLeftHole) {
+    Serial.println("LSA");
+    previousSensorStateLeftHole = sensorStateLeftHole; 
+    return true;
+   }
+  if (sensorStateLeftHole && !previousSensorStateLeftHole) {
+    Serial.println("LSR");
+    previousSensorStateLeftHole = sensorStateLeftHole; 
+    return false;
+  } 
 }
 
 bool check_right_sensor_activity() {
   sensorStateRightHole = digitalRead(RIGHT_HOLE_SENSOR_PIN);
-  if (previousSensorStateRightHole != sensorStateRightHole) {
-    if (sensorStateRightHole == LOW) {
-      Serial.println("RSA");
-      previousSensorStateRightHole = sensorStateRightHole; 
-      return true;
-    }
-    else if (sensorStateRightHole == HIGH) {
-      Serial.println("RSR");
-      previousSensorStateRightHole = sensorStateRightHole; 
-      return false;
-    }  
-  } 
-  return previousSensorStateRightHole;
+  if (!sensorStateRightHole && previousSensorStateRightHole) {
+    Serial.println("RSA");
+    previousSensorStateRightHole = sensorStateRightHole; 
+    return true;
+  }
+  if (sensorStateRightHole && !previousSensorStateRightHole) {
+    Serial.println("RSR");
+    previousSensorStateRightHole = sensorStateRightHole; 
+    return false;
+  }  
 }
 
 void TO_start() {
@@ -152,7 +149,7 @@ void TO_start() {
   Serial.println("TO");
   while ( millis() < currentTimeoutStartTimestamp + 3000) {
     check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
-    while (check_right_sensor_activity()){
+    while (check_right_sensor_activity() == 0){
       // fica preso aqui ate o rato sair do sensor da direita
       // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
       currentTimeoutStartTimestamp = millis();      
@@ -165,11 +162,12 @@ void ITI_start(){
   Serial.println("ITIS");
   while ( millis() < currentItisStartTimestamp + 3000) {
     check_right_sensor_activity(); //ve se o rato vai ao sensor da direita mas nao faz nada para alem de registar o evento
-    while (check_left_sensor_activity()){
+    while (check_left_sensor_activity() == 0){
       // fica preso aqui ate o rato sair do sensor da esquerda
       // se saltar fora aguarda 3 segundos para ver se nao vai para la outra vez
-      currentItisStartTimestamp = millis();      
+      currentItisStartTimestamp = millis(); 
     }
+         
   }
 }
 
@@ -180,28 +178,46 @@ void setup() {
 
   AFMS.begin();
   myMotor->setSpeed(255);  // 255 rpm maxima velocidade
+
+    // configurar os pins dos leds para OUTPUT
+  pinMode(HL_LED_PIN, OUTPUT);
+  pinMode(LL_LED_PIN, OUTPUT);
+  pinMode(RL_LED_PIN, OUTPUT);
+
+  // configurar os sensores
+  pinMode(FEEDER_SENSOR_PIN, INPUT);
+  pinMode(LEFT_HOLE_SENSOR_PIN, INPUT);
+  pinMode(RIGHT_HOLE_SENSOR_PIN, INPUT);
+
+  digitalWrite(FEEDER_SENSOR_PIN, HIGH);
+  digitalWrite(LEFT_HOLE_SENSOR_PIN, HIGH);
+  digitalWrite(RIGHT_HOLE_SENSOR_PIN, HIGH);
+
 }
 
 void loop() {
-  // pre-trial  
-  if (Serial.readString() == "start") {
-    arduinoStartedTimestamp = millis();
-    Serial.println("SA");
-    
-    house_light_on();
-    motor_step_and_detect();
-    left_light_on();
-
-    while (millis() < arduinoStartedTimestamp + 5000) {
-      // 5 segundos para recolher???
-      check_left_sensor_activity();
-    }
-    left_light_off();
-    ITI_start();
-    delayStarted = true;
+  // pre-trial
+  
+//  if (Serial.readString() == "start") {
+    if (true) {
+      arduinoStartedTimestamp = millis();
+      Serial.println("SA");
+      
+      house_light_on();
+      //motor_step_and_detect();
+      left_light_on();
+  
+      while (millis() < arduinoStartedTimestamp + 1000) {
+        // 5 segundos para recolher???
+        check_left_sensor_activity();
+      }
+      left_light_off();
+      ITI_start();
+      delayStarted = true;
   }
   //aqui inicia o Delay start
-  else if (delayStarted) {
+//  else if (delayStarted) {
+if (delayStarted) {
     currentDelayStartTimestamp = millis();
     Serial.println("DS");
 
@@ -212,8 +228,8 @@ void loop() {
     // intervalo de 3 segundos depois do Delay start
     // se sensor direita (RS) ativado, Premature Response
     while (millis() < currentDelayStartTimestamp + 3000) {
-      check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
-      if (check_right_sensor_activity()){
+      check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento   
+      if (check_right_sensor_activity() == 0){
         //castigo com a luz desligado
         house_light_off();  
         Serial.println("PR");
@@ -237,20 +253,20 @@ void loop() {
       // intervalo de 60 segundos
       while(millis() < currentResponseTimeStartTimestamp + 60000) {
         check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
-        if (check_right_sensor_activity()) {
+        if (check_right_sensor_activity() == 0) {
           //como ativou esta resposta ja nao vai para o omission response
           omissionStarted = false;   
              
-          while (check_right_sensor_activity()){} // espera para que o sensor right (3) seja inativado
+          while (check_right_sensor_activity() == 0){} // espera para que o sensor right (3) seja inativado
           right_light_off();
-          motor_step_and_detect();
+          //motor_step_and_detect();
           left_light_on();
 
           // feeding time start
           currentFeedingTimeStartTimestamp = millis();
           Serial.println("FTS");
           while(millis() < currentResponseTimeStartTimestamp + 30000) {
-            if (check_right_sensor_activity()) {
+            if (check_right_sensor_activity() == 0) {
               //Perseverant response
               Serial.println("SR");
               while (check_right_sensor_activity()){} // espera para que o sensor right (3) seja inativado
@@ -259,8 +275,8 @@ void loop() {
               currentFeedingTimeStartTimestamp = millis();
               Serial.println("FTS");
             }
-            else if (check_left_sensor_activity()) {
-              while (check_left_sensor_activity()){} // espera para que o sensor left (3) seja inativado
+            else if (check_left_sensor_activity() == 0) {
+              while (check_left_sensor_activity() == 0){} // espera para que o sensor left (3) seja inativado
               // break the FDS 30s interval loop
               break;
             }
