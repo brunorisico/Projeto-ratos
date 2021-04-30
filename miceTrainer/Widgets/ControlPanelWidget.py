@@ -46,6 +46,13 @@ class ControlPanelWidget(QWidget):
         self.start_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaPlay')))
         self.start_button.clicked.connect(self.startTimer)
 
+        # stop button
+        self.stop_button = QPushButton('Stop', self)
+        self.stop_button.setFixedHeight(50)
+        self.stop_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaStop')))
+        self.stop_button.clicked.connect(self.stopTrial)
+        self.stop_button.setEnabled(False)
+
         # -------------- TIMER ------------------------------
         timer_groupbox = QGroupBox("Timer")
         self.timer_label = QLabel('00:00:00')
@@ -92,9 +99,9 @@ class ControlPanelWidget(QWidget):
         # illustration purposes only
         self.house_led = Led(self, on_color=Led.white, shape=Led.circle)
         self.house_led.setFixedSize(150, 150)
-        self.left_led = Led(self, on_color=Led.green, shape=Led.circle)
+        self.left_led = Led(self, on_color=Led.orange, shape=Led.circle)
         self.left_led.setFixedSize(150, 150)
-        self.right_led = Led(self, on_color=Led.red, shape=Led.circle)
+        self.right_led = Led(self, on_color=Led.orange, shape=Led.circle)
         self.right_led.setFixedSize(150, 150)
 
         leds_layout = QGridLayout()
@@ -124,11 +131,11 @@ class ControlPanelWidget(QWidget):
         self.right_sensor_label.setFont(QFont('Arial', 12))
         
         # illustration purposes only
-        self.feeder_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.feeder_sensor = Led(self, on_color=Led.green, shape=Led.rectangle)
         self.feeder_sensor.set_status(True)
-        self.left_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.left_sensor = Led(self, on_color=Led.green, shape=Led.rectangle)
         self.left_sensor.set_status(True)
-        self.right_sensor = Led(self, on_color=Led.orange, shape=Led.rectangle)
+        self.right_sensor = Led(self, on_color=Led.green, shape=Led.rectangle)
         self.right_sensor.set_status(True)
 
         sensors_layout = QGridLayout()
@@ -144,7 +151,8 @@ class ControlPanelWidget(QWidget):
 
         # layout
         experiment_control_layout = QGridLayout()
-        experiment_control_layout.addWidget(self.start_button, 1, 0, 1, 3)
+        experiment_control_layout.addWidget(self.start_button, 1, 0, 1, 2)
+        experiment_control_layout.addWidget(self.stop_button, 1, 2, 1, 1)
         experiment_control_layout.addWidget(timer_groupbox, 2, 0, 1, 3)
         experiment_control_layout.addWidget(trials_groupbox, 3, 0, 1, 3)
         experiment_control_layout.addWidget(leds_groupbox, 4, 0, 1, 3)
@@ -184,7 +192,9 @@ class ControlPanelWidget(QWidget):
             time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
             self.timer_label.setText(time)
         else:
+            self.serialThread.end_trial()
             self.timer.stop()
+            
             #self.start_button.setEnabled(False)
 
     def startTimer(self):
@@ -193,47 +203,54 @@ class ControlPanelWidget(QWidget):
         self.timer_label.setStyleSheet("QLabel {color: green; background-color: black;}")
         self.start_button.setEnabled(False)
 
+    def stopTrial(self):
+        self.serialThread.end_trial()
+        self.timer.stop()                   
+        self.terminal.storeText("####### Experiment canceled by the user! #######") 
+        self.terminal.displayText()
+        self.stop_button.setEnabled(False)
+                    
     def setTimerTrialConnection(self, timer, trial, serial_connection):
         self.timer_value_seconds = timer
         self.trials_value = trial
         self.serial_connection = serial_connection
 
         def thread_control(value):
-            print(value)
+            #(value)
             # I hate to do chained if else but it is the only way I can do this in a short time
             # does not matter anyway since this is only for illustration purposes
-            # the data is being recorded directly in the SerialThread for precision
-            if value == 'DS':
+            # the data is being recorded directly in the SerialThread
+            if value == 'SA':
                 self.timer.start(1000)
-                self.terminal.storeText("Delay started")
+                self.terminal.storeText("Arduino has started")
                 self.terminal.displayText()
-                
-            elif value == 'FSF':
-                self.timer.stop()
-                self.start_button.setEnabled(True)
-                self.terminal.storeText("Feeder sensor failed at trial {} out of {}".format(self.current_trial_value, self.trials_value))
-                self.terminal.storeText("Arduino has been stoped and reset")
-                self.terminal.displayText()
-   
-            # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
-            elif value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
+                self.stop_button.setEnabled(True)
+            
+            elif value == 'ART':
+                self.terminal.storeText(" ####### Arduino setup complete #######")
+                self.current_trial_value = self.current_trial_value + 1
                 self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
-                if value == 'PR':
-                    self.register_values[0] = self.register_values[0] + 1
-                    response = "premature response"         
-                elif value == 'OR':
-                    self.register_values[1] = self.register_values[1] + 1
-                    response = "omission response" 
-                elif value == 'TR':
-                    self.register_values[2] = self.register_values[2] + 1
-                    response = "timed response" 
-                elif value == 'SR':
-                    self.register_values[3] = self.register_values[3] + 1
-                    response = "perseverant response" 
+                self.terminal.displayText()
 
-                self.barplot.bar_plot(self.register_values)
-                new_line_after_trial = '\n' + '-----' * 10
-                self.terminal.storeText("Trial {} ended up with a {}{}".format(self.current_trial_value, response, new_line_after_trial))
+            # sensors activity
+            elif value == 'LSA':
+                self.left_sensor.set_status(False)
+                self.terminal.storeText("Trial {} out of {}. Left sensor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == 'LSR':
+                self.left_sensor.set_status(True)
+                self.terminal.storeText("Trial {} out of {}. Left sensor restored".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == 'RSA':
+                self.right_sensor.set_status(False)
+                self.terminal.storeText("Trial {} out of {}. Right sensor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == 'RSR':
+                self.right_sensor.set_status(True)
+                self.terminal.storeText("Trial {} out of {}. Right sensor restored".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
 
             # turn leds on and off in the GUI
@@ -265,13 +282,83 @@ class ControlPanelWidget(QWidget):
                 self.terminal.storeText("Trial {} out of {}. {} {}".format(self.current_trial_value, self.trials_value, light_name, light_status))
                 self.terminal.displayText()
 
+            # timer starts only after delay start????
+            elif value == 'DS':
+                # self.timer.start(1000)
+                self.terminal.storeText("Trial {} out of {}. Delay started".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+                
+            # motor and sensor signals
+            elif value == 'MO': 
+                self.terminal.storeText("Trial {} out of {}. Motor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == 'FSA':
+                self.feeder_sensor.set_status(False)
+                self.terminal.storeText("Trial {} out of {}. Feeder sensor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+            
+            elif value == 'FSR':
+                self.feeder_sensor.set_status(True)
+                self.terminal.storeText("Trial {} out of {}. Feeder sensor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == 'FSF':
+                self.timer.stop()
+                self.feeder_sensor.set_status(False)
+                self.terminal.storeText("Trial {} out of {}. Feeder sensor failed. Arduino has been stoped and reset!".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+  
+            elif value == "ITIS":
+                if self.current_trial_value <= self.trials_value:
+                    self.terminal.storeText("Trial {} out of {}. Intertrial interval started".format(self.current_trial_value, self.trials_value))
+                    self.terminal.displayText()
+
+            elif value == "RTS":
+                self.terminal.storeText("Trial {} out of {}. Response time started started".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == "FTS":
+                self.terminal.storeText("Trial {} out of {}. Feeding time started started".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+            
+            elif value == "TO":
+                self.terminal.storeText("Trial {} out of {}. Timeout started".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+         
+            # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
+            elif value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
+                if value == 'PR':
+                    self.register_values[0] = self.register_values[0] + 1
+                    response = "Premature response"         
+                elif value == 'OR':
+                    self.register_values[1] = self.register_values[1] + 1
+                    response = "Omission response" 
+                elif value == 'TR':
+                    self.register_values[2] = self.register_values[2] + 1
+                    response = "Timed response" 
+                elif value == 'SR':
+                    self.register_values[3] = self.register_values[3] + 1
+                    response = "Perseverant response" 
+
+                self.barplot.bar_plot(self.register_values)
+                self.terminal.storeText("Trial {} out of {}. {}".format(self.current_trial_value, self.trials_value, response))
+                self.terminal.displayText()
+
+
             # trial end signal
             elif value == 'TE':
+                self.terminal.storeText("####### Trial {} out of {} ended! #######".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
                 self.current_trial_value = self.current_trial_value + 1
-                if self.current_trial_value > self.trials_value: 
+                if self.current_trial_value > self.trials_value:
+                    self.serialThread.end_trial()
+                    self.terminal.storeText("####### The experiment ended! #######") 
+                    self.terminal.displayText()
                     self.timer.stop()
-                    self.start_button.setEnabled(False)
-                    print("IMPLEMENTAR FIM EXPERIENCIA")
+                    
+                else:
+                    self.trials_label.setText("{} out of {}".format(self.current_trial_value, self.trials_value))
 
         # set trial and timer values
         time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
@@ -333,7 +420,7 @@ class BarPlotWidget(QWidget):
         # make sure figure is clear
         self.figure.clear()
 
-        print(data)
+        #print(data)
 
         #sns.histplot(data=tips, x="day", hue="sex", multiple="dodge", shrink=.8)
         self.ax = self.figure.add_subplot(111)

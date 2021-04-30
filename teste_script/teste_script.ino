@@ -171,7 +171,6 @@ void ITI_start(){
   }
 }
 
-
 void setup() {
   Serial.begin(BAUD_RATE);
   Serial.setTimeout(1);
@@ -198,11 +197,14 @@ void setup() {
 void loop() {
   // pre-trial
   
-//  if (Serial.readString() == "start") {
-    if (true) {
+  if (Serial.readString() == "start") {
       arduinoStartedTimestamp = millis();
       Serial.println("SA");
-      
+
+      //fazer um quick check aos sensores...
+      check_left_sensor_activity();
+      check_right_sensor_activity();
+ 
       house_light_on();
       //motor_step_and_detect();
       left_light_on();
@@ -213,11 +215,12 @@ void loop() {
       }
       left_light_off();
       ITI_start();
-      delayStarted = true;
+      Serial.println("ART");
+      delayStarted = true;     
   }
+   
   //aqui inicia o Delay start
-//  else if (delayStarted) {
-if (delayStarted) {
+  else if (delayStarted) {
     currentDelayStartTimestamp = millis();
     Serial.println("DS");
 
@@ -255,8 +258,9 @@ if (delayStarted) {
         check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento
         if (check_right_sensor_activity() == 0) {
           //como ativou esta resposta ja nao vai para o omission response
+          Serial.println("TR");
           omissionStarted = false;   
-             
+            
           while (check_right_sensor_activity() == 0){} // espera para que o sensor right (3) seja inativado
           right_light_off();
           //motor_step_and_detect();
@@ -265,11 +269,11 @@ if (delayStarted) {
           // feeding time start
           currentFeedingTimeStartTimestamp = millis();
           Serial.println("FTS");
-          while(millis() < currentResponseTimeStartTimestamp + 30000) {
+          while(millis() < currentFeedingTimeStartTimestamp + 30000) {
             if (check_right_sensor_activity() == 0) {
               //Perseverant response
               Serial.println("SR");
-              while (check_right_sensor_activity()){} // espera para que o sensor right (3) seja inativado
+              while (check_right_sensor_activity() == 0){} // espera para que o sensor right (3) seja inativado
               
               // restart do tempo do FTS????
               currentFeedingTimeStartTimestamp = millis();
