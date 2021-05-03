@@ -16,7 +16,7 @@ int sensorStateFeeder = 1;
 int sensorStateLeftHole = 1, previousSensorStateLeftHole = 0;
 int sensorStateRightHole = 1, previousSensorStateRightHole = 0;
 
-// variables
+// timestamp variables
 unsigned long arduinoStartedTimestamp = 0;
 unsigned long currentItisStartTimestamp = 0;
 unsigned long currentDelayStartTimestamp = 0;
@@ -29,12 +29,21 @@ bool delayStarted = false; // fica verdadeiro depois do ITIS
 bool responseTimeStarted = true;
 bool omissionStarted = true;
 
-// curren trial
+// current trial
 int currenTrial = 1;
+
+// serial read value
+String serialRead = "";
+
+// train or test
+String experimentRunning = "";
 
 // motor time variables
 unsigned long timeDelayFeederSensor = 0;
 unsigned long feederDelayMs = 1000;
+
+// variable after delay start (milliseconds)
+unsigned long delayStartValue = 3000;
 
 // valores recomendados para a baud rate, quanto mais alto mais rapido, mas nao abusar
 // 200, 2400, 4800, 19200, 38400, 57600 e 115200.
@@ -198,8 +207,8 @@ void setup() {
 
 void loop() {
   // pre-trial
-  
-  if (Serial.readString() == "train" or Serial.readString()= "test") {
+  serialRead = Serial.readString();
+  if (serialRead == "train" or serialRead == "test") {
       arduinoStartedTimestamp = millis();
       Serial.println("SA");
 
@@ -220,7 +229,12 @@ void loop() {
       left_light_off();
       ITI_start();
       Serial.println("ART");
-      delayStarted = true;     
+      
+      delayStarted = true;
+      if (serialRead == "train") {
+        experimentRunning = "train";
+        } else {experimentRunning = "test";}
+      serialRead = ""; 
   }
    
   //aqui inicia o Delay start
@@ -234,21 +248,31 @@ void loop() {
     
     // intervalo de 3 segundos depois do Delay start
     // se sensor direita (RS) ativado, Premature Response
-    while (millis() < currentDelayStartTimestamp + 3000) {
+    // como nao ha castigo por premature response no test meter aqui uma flag
+    // e criar tambem uma variavel que vai de 6-12s entre 25 a 95 trials
+    if (experimentRunning == "test" and  95 >= currenTrial >= 70) {
+      delayStartValue = random(6000, 12001);
+    } else {delayStartValue = 3000;}
+
+    while (millis() < currentDelayStartTimestamp + delayStartValue) {
       check_left_sensor_activity(); //ve se o rato vai ao sensor da esquerda mas nao faz nada para alem de registar o evento   
-      if (check_right_sensor_activity() == 0){
-        //castigo com a luz desligado
-        house_light_off();  
-        Serial.println("PR");
-        
-        //como ha PR nao vamos para as fases seguintes e isto volta para o delay start apos o TO_start acabar
-        responseTimeStarted = false;
-        
-        //TO_start em loop de 3 segundos ate o sensor nao detetar nada
-        TO_start();
-        //voltar a ligar a luz apos acabar castigo
-        house_light_on();
-        Serial.println("TE");  
+      if (check_right_sensor_activity() == 0){     
+        //castigo com a luz desligado se train e fim do trial
+        // senao so ve tambem se ha atividade no sensor da direita
+        if (experimentRunning == "train") {}
+          house_light_off();  
+          Serial.println("PR");
+          
+          //como ha PR nao vamos para as fases seguintes e isto volta para o delay start apos o TO_start acabar
+          responseTimeStarted = false;
+          
+          //TO_start em loop de 3 segundos ate o sensor nao detetar nada
+          TO_start();
+          //voltar a ligar a luz apos acabar castigo
+          house_light_on();
+          Serial.println("TE");
+          currenTrial = currenTrial + 1;
+        }  
       }
     }
     // se o sensor nao foi ativado anterioremente...
@@ -311,7 +335,6 @@ void loop() {
       }    
     }
     //como o Arduino funciona em loop isto volta para o delay start se o delayStarted for true
-  }
 }
 
   

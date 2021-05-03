@@ -199,7 +199,7 @@ void setup() {
 void loop() {
   // pre-trial
   
-  if (Serial.readString() == "train" or Serial.readString()= "test") {
+  if (Serial.readString() == "start") {
       arduinoStartedTimestamp = millis();
       Serial.println("SA");
 

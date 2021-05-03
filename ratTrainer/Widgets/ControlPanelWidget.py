@@ -16,6 +16,7 @@ from pyqt_led import Led
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import seaborn as sns
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 from Widgets.Threads.SerialThread import SerialThread
 
@@ -34,6 +35,7 @@ class ControlPanelWidget(QWidget):
         self.register_values = [0,0,0,0]
 
         self.serialThread = ""
+        self.end_trial_by_timer = False
 
         # ------------------------------- TOP LEFT ------------------------------------
         # group of buttons to control the experiment
@@ -47,11 +49,11 @@ class ControlPanelWidget(QWidget):
         self.start_button.clicked.connect(self.startTimer)
 
         # stop button
-        self.stop_button = QPushButton('Stop', self)
-        self.stop_button.setFixedHeight(50)
-        self.stop_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaStop')))
-        self.stop_button.clicked.connect(self.stopTrial)
-        self.stop_button.setEnabled(False)
+        # self.stop_button = QPushButton('Stop', self)
+        # self.stop_button.setFixedHeight(50)
+        # self.stop_button.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_MediaStop')))
+        # self.stop_button.clicked.connect(self.stopTrial)
+        # self.stop_button.setEnabled(False)
 
         # -------------- TIMER ------------------------------
         timer_groupbox = QGroupBox("Timer")
@@ -151,8 +153,8 @@ class ControlPanelWidget(QWidget):
 
         # layout
         experiment_control_layout = QGridLayout()
-        experiment_control_layout.addWidget(self.start_button, 1, 0, 1, 2)
-        experiment_control_layout.addWidget(self.stop_button, 1, 2, 1, 1)
+        experiment_control_layout.addWidget(self.start_button, 1, 0, 1, 3)
+        #experiment_control_layout.addWidget(self.stop_button, 1, 2, 1, 1)
         experiment_control_layout.addWidget(timer_groupbox, 2, 0, 1, 3)
         experiment_control_layout.addWidget(trials_groupbox, 3, 0, 1, 3)
         experiment_control_layout.addWidget(leds_groupbox, 4, 0, 1, 3)
@@ -192,7 +194,7 @@ class ControlPanelWidget(QWidget):
             time = QDateTime.fromTime_t(self.timer_value_seconds).toUTC().toString('hh:mm:ss')
             self.timer_label.setText(time)
         else:
-            self.serialThread.end_trial()
+            self.end_trial_by_timer = True # wait for the current trial to end
             self.timer.stop()
             
             #self.start_button.setEnabled(False)
@@ -203,14 +205,14 @@ class ControlPanelWidget(QWidget):
         self.timer_label.setStyleSheet("QLabel {color: green; background-color: black;}")
         self.start_button.setEnabled(False)
 
-    def stopTrial(self):
-        self.serialThread.end_trial()
-        self.timer.stop()                   
-        self.terminal.storeText("####### Experiment canceled by the user! #######") 
-        self.terminal.displayText()
-        self.stop_button.setEnabled(False)
+    # def stopTrial(self):
+    #     self.serialThread.end_trial()
+    #     self.timer.stop()                   
+    #     self.terminal.storeText("####### Experiment canceled by the user! #######") 
+    #     self.terminal.displayText()
+    #     self.stop_button.setEnabled(False)
                     
-    def setTimerTrialConnection(self, timer, trial, serial_connection):
+    def setTimerTrialConnection(self, timer, trial, serial_connection, vds_name):
         self.timer_value_seconds = timer
         self.trials_value = trial
         self.serial_connection = serial_connection
@@ -224,7 +226,7 @@ class ControlPanelWidget(QWidget):
                 self.timer.start(1000)
                 self.terminal.storeText("Arduino has started")
                 self.terminal.displayText()
-                self.stop_button.setEnabled(True)
+                #self.stop_button.setEnabled(True)
             
             elif value == 'ART':
                 self.terminal.storeText(" ####### Arduino setup complete #######")
@@ -283,7 +285,7 @@ class ControlPanelWidget(QWidget):
                 self.terminal.displayText()
 
             # timer starts only after delay start????
-            elif value == 'DS':
+            elif value == 'DS' and (self.current_trial_value <= self.trials_value) and not self.end_trial_by_timer:
                 # self.timer.start(1000)
                 self.terminal.storeText("Trial {} out of {}. Delay started".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
@@ -351,8 +353,8 @@ class ControlPanelWidget(QWidget):
                 self.terminal.storeText("####### Trial {} out of {} ended! #######".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
                 self.current_trial_value = self.current_trial_value + 1
-                if self.current_trial_value > self.trials_value:
-                    self.serialThread.end_trial()
+                if (self.current_trial_value > self.trials_value) or self.end_trial_by_timer:
+                    self.serialThread.end_trial(datetime.now(), self.register_values)
                     self.terminal.storeText("####### The experiment ended! #######") 
                     self.terminal.displayText()
                     self.timer.stop()
@@ -367,7 +369,7 @@ class ControlPanelWidget(QWidget):
         self.trials_label.setText("0 out of {}".format(self.trials_value))
 
         # start reading the serial connection
-        self.serialThread = SerialThread(self, serial_connection)
+        self.serialThread = SerialThread(self, serial_connection, vds_name)
         self.serialThread.signal.connect(thread_control)
         self.serialThread.start()
 
