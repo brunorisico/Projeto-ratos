@@ -124,7 +124,7 @@ class StartWidget(QWidget):
     def vds_selected(self, vds_selected):
         if vds_selected == "VDS training session":
             self.VDS = "Training"
-            self.number_of_trials = 5    
+            self.number_of_trials = 100    
         elif vds_selected == "VDS test session":
             self.VDS = "Test"
             self.number_of_trials = 120
