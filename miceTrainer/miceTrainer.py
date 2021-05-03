@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #main_window.showMaximized()
     main_window.setMinimumSize(400, 200)
     main_window.setWindowIcon(QIcon('rat_icon.png')) # "Icon made by Pixel perfect from www.flaticon.com"
-    main_window.setWindowTitle("Mice Trainer")
+    main_window.setWindowTitle("Rat Trainer")
     main_window.show()
 
     sys.exit(app.exec_())
