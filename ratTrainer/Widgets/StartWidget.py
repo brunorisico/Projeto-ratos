@@ -139,15 +139,15 @@ class StartWidget(QWidget):
         This function will also change the widget to the experiment control panel
         """
 
-        #try:
-        self.main_window_reference.set_status_bar_message("Trying to connect to Arduino using port {}".format(self.selected_com_port))
-        serial_connection = serial.Serial(self.selected_com_port, 115200, timeout=0)
+        try:
+            self.main_window_reference.set_status_bar_message("Trying to connect to Arduino using port {}".format(self.selected_com_port))
+            serial_connection = serial.Serial(self.selected_com_port, 115200, timeout=0)
 
-        self.main_window_reference.set_to_control_panel(int(self.timer_QLineEdit.text()), int(self.trial_QLineEdit.text()), serial_connection, self.VDS)
- 
-        self.main_window_reference.showMaximized()
-        self.main_window_reference.set_status_bar_message("If you found any problem you can contact me using my personal email - brunorisico@gmail.com")
+            self.main_window_reference.set_to_control_panel(int(self.timer_QLineEdit.text()), int(self.trial_QLineEdit.text()), serial_connection, self.VDS)
 
-        #except Exception as e:
-         #   self.main_window_reference.set_status_bar_message(str(e).split(':')[0])
+            self.main_window_reference.showMaximized()
+            self.main_window_reference.set_status_bar_message("If you found any problem you can contact me using my personal email - brunorisico@gmail.com")
+
+        except Exception as e:
+            self.main_window_reference.set_status_bar_message(str(e).split(':')[0])
 
