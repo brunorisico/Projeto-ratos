@@ -193,7 +193,6 @@ void setup() {
   digitalWrite(FEEDER_SENSOR_PIN, HIGH);
   digitalWrite(LEFT_HOLE_SENSOR_PIN, HIGH);
   digitalWrite(RIGHT_HOLE_SENSOR_PIN, HIGH);
-
 }
 
 void loop() {

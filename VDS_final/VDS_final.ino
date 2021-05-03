@@ -29,8 +29,9 @@ bool delayStarted = false; // fica verdadeiro depois do ITIS
 bool responseTimeStarted = true;
 bool omissionStarted = true;
 
-// current trial
+//trial variables
 int currenTrial = 1;
+int totalNumberTrials = 100;
 
 // serial read value
 String serialRead = "";
@@ -234,12 +235,16 @@ void loop() {
     delayStarted = true;
     if (serialRead == "train") {
       experimentRunning = "train";
-      } else {experimentRunning = "test";}
+      totalNumberTrials = 100;
+      } else {
+        experimentRunning = "test";
+        totalNumberTrials = 120;
+        }
     serialRead = ""; 
   }
    
   //aqui inicia o Delay start
-  else if (delayStarted and currenTrial <= 100) {
+  else if (delayStarted and currenTrial <= totalNumberTrials) {
     currentDelayStartTimestamp = millis();
     Serial.println("DS");
 
