@@ -283,7 +283,10 @@ void loop() {
           house_light_on();
           Serial.println("TE");
           currentTrial = currentTrial + 1;
-       }  
+       } else if (experimentRunning == "test"){
+          Serial.println("PR");
+          while (check_right_sensor_activity() == 0){} // se o rato fica no sensor da direita a experiencia nao avanca!!!! Pode ser um problema???  
+        }
      }
     }
     // se o sensor nao foi ativado anterioremente...
