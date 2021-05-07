@@ -30,8 +30,11 @@ bool responseTimeStarted = true;
 bool omissionStarted = true;
 
 //trial variables
-int currenTrial = 1;
+int currentTrial = 1;
 int totalNumberTrials = 100;
+
+// trial timer in milliseconds
+unsigned long experimentDuration = 0;
 
 // serial read value
 String serialRead = "";
@@ -236,15 +239,17 @@ void loop() {
     if (serialRead == "train") {
       experimentRunning = "train";
       totalNumberTrials = 100;
+      experimentDuration = 1800000; // 30 min
       } else {
         experimentRunning = "test";
         totalNumberTrials = 120;
+        experimentDuration = 3600000; // 60 min
         }
     serialRead = ""; 
   }
    
   //aqui inicia o Delay start
-  else if (delayStarted and currenTrial <= totalNumberTrials) {
+  else if (delayStarted and currentTrial <= totalNumberTrials and arduinoStartedTimestamp < experimentDuration) {
     currentDelayStartTimestamp = millis();
     Serial.println("DS");
 
@@ -256,7 +261,7 @@ void loop() {
     // se sensor direita (RS) ativado, Premature Response
     // como nao ha castigo por premature response no test meter aqui uma flag
     // e criar tambem uma variavel que vai de 6-12s entre 25 a 95 trials
-    if (experimentRunning == "test" and  95 >= currenTrial >= 70) {
+    if (experimentRunning == "test" and  95 > currentTrial >= 70) {
       delayStartValue = random(6000, 12001);
     } else {delayStartValue = 3000;}
 
@@ -277,7 +282,7 @@ void loop() {
           //voltar a ligar a luz apos acabar castigo
           house_light_on();
           Serial.println("TE");
-          currenTrial = currenTrial + 1;
+          currentTrial = currentTrial + 1;
        }  
      }
     }
@@ -321,7 +326,7 @@ void loop() {
           }
           left_light_off();
           Serial.println("TE");
-          currenTrial = currenTrial + 1;
+          currentTrial = currentTrial + 1;
           ITI_start();
           
           break; //get out of the 60 second loop
@@ -337,7 +342,7 @@ void loop() {
         TO_start();
         house_light_on();
         Serial.println("TE");
-        currenTrial = currenTrial + 1;
+        currentTrial = currentTrial + 1;
       }    
     }
   }
