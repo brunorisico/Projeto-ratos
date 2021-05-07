@@ -1,6 +1,6 @@
 """
 creation date: 1-4-2021 6:00
-last modified: 12-04-2021 10:15
+last modified: 07-05-2021 17:00
 
 @author: Bruno Correia - brunorisico@gmail.com
 
@@ -17,10 +17,6 @@ from PyQt5.QtGui import QPalette, QColor, QIcon
  
 from Widgets.StartWidget import StartWidget
 from Widgets.ControlPanelWidget import ControlPanelWidget
-
-# from modules.widget import StroopTestWidget
-# mport ast
-
 
 class Mice(QMainWindow):
     """Main window of the program

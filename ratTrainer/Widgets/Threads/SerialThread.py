@@ -1,7 +1,17 @@
+"""
+creation date: 5-4-2021 20:00
+last modified: 07-05-2021 16:15
+
+@author: Bruno Correia - brunorisico@gmail.com
+
+Thread used to connect to the Arduino and to generate the sheets
+"""
+
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 from openpyxl import Workbook, load_workbook
 from datetime import datetime, timedelta
+from random import randrange
 
 class SerialThread(QThread):
     signal = pyqtSignal(str)
@@ -17,10 +27,8 @@ class SerialThread(QThread):
         self.pre_trial_sheet = self.workbook.active
         self.pre_trial_sheet.title = "Pre-trial"
  
-        #self.pre_trial_sheet = self.workbook.create_sheet("Pre-trial")
-        
-        #headers = ["Code", "Timestamp", "Delta start timestamp"]
-        #self.pre_trial_sheet.append(headers)
+        self.headers = ["Code", "Timestamp", "Delta start timestamp"]
+        self.pre_trial_sheet.append(self.headers)
 
         self.trial = 0
         self.left_sensor_activations = 0
@@ -71,7 +79,9 @@ class SerialThread(QThread):
                             if self.buffer == 'TE' or self.buffer == "ART":
                                 self.trial = self.trial + 1
                                 new_sheet_name = "Trial " + str(self.trial)
-                                self.workbook.create_sheet(new_sheet_name)
+                                new_sheet_handler = self.workbook.create_sheet(new_sheet_name)
+                                new_sheet_handler.append(self.headers)
+
                             elif self.buffer == 'RSA':
                                 self.right_sensor_activations = self.right_sensor_activations + 1
                             elif self.buffer == 'LSA':
@@ -92,19 +102,19 @@ class SerialThread(QThread):
         self.workbook.save(filename=self.arduino_started_timestamp.strftime("%a %d %b %Y %H %M %S ") + str(self.vds_name) + ".xlsx")
 
         # resumed information added to an existing xlsx file called sessions.xlsx
-        sessions_workbook = load_workbook(filename="sessions.xlsx")
-        sheet = sessions_workbook.active
-        sheet.append([self.vds_name, self.arduino_started_timestamp, date_end, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations, data[0], data[1], data[2], data[3], self.trial-1])
+        try:
+            sessions_workbook = load_workbook(filename="sessions.xlsx")
+            sheet = sessions_workbook.active
+            sheet.append([self.vds_name, self.arduino_started_timestamp, date_end, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations, data[0], data[1], data[2], data[3], self.trial-1])
 
-        sessions_workbook.save(filename="sessions.xlsx")
+            sessions_workbook.save(filename="sessions.xlsx")
+        except: # if sessions xlsx was left open have a backup plan
+            backup_session_workbook = Workbook()
+            sheet = backup_session_workbook.active
+            sheet.append([self.vds_name, self.arduino_started_timestamp, date_end, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations, data[0], data[1], data[2], data[3], self.trial-1])
+
+            sessions_workbook.save(filename="backup_sessions" + str(randrange(1000)) + ".xlsx" )
 
     def write_to_spreadsheet(self, sheet_number, code, timestamp):
-        #print(self.workbook.get_sheet_names())
-        #print(sheet_number)
-        #print(self.workbook.get_sheet_names()[sheet_number])
-        #print([code, timestamp, timestamp - self.arduino_started_timestamp])
-        
         working_sheet = self.workbook.get_sheet_by_name(self.workbook.get_sheet_names()[sheet_number])
         working_sheet.append([code, timestamp.strftime("%H:%M:%S:%f"), str(timestamp - self.arduino_started_timestamp)])
-
-        #self.spreadsheet.save(filename="olalalal.xlsx")

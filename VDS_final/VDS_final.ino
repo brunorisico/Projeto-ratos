@@ -249,7 +249,7 @@ void loop() {
   }
    
   //aqui inicia o Delay start
-  else if (delayStarted and currentTrial <= totalNumberTrials and arduinoStartedTimestamp < experimentDuration) {
+  else if (delayStarted and (currentTrial <= totalNumberTrials) and (millis() - arduinoStartedTimestamp < experimentDuration)) {
     currentDelayStartTimestamp = millis();
     Serial.println("DS");
 
