@@ -131,7 +131,7 @@ class StartWidget(QWidget):
             self.number_of_trials = 120
             self.timer = 3600
         self.trial_QLineEdit.setText(str(self.number_of_trials))
-
+        self.timer_QLineEdit.setText(str(self.timer))
 
     def connect_pressed(self):
         """  

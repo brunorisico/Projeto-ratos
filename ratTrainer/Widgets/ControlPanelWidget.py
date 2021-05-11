@@ -31,8 +31,13 @@ class ControlPanelWidget(QWidget):
         self.timer_value_seconds = 0
         self.trials_value = 0
         self.current_trial_value = 0
-
+        
+        self.vds_name = ""
+        self.current_ds_value = ""
+        
         self.register_values = [0,0,0,0]
+        self.test_register_values = {"3is" : [0,0,0,0], "6s" : [0,0,0,0], "12s" : [0,0,0,0], "3fs" : [0,0,0,0]}
+        
 
         self.serialThread = ""
         self.end_trial_by_timer = False
@@ -216,6 +221,7 @@ class ControlPanelWidget(QWidget):
         self.timer_value_seconds = timer
         self.trials_value = trial
         self.serial_connection = serial_connection
+        self.vds_name = vds_name
 
         def thread_control(value):
             #(value)
@@ -289,7 +295,14 @@ class ControlPanelWidget(QWidget):
                 # self.timer.start(1000)
                 self.terminal.storeText("Trial {} out of {}. Delay started".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
-                
+                self.current_ds_value = 3000 #default value
+
+            elif value == '6000' or value == '12000':
+                # self.timer.start(1000)
+                self.terminal.storeText("Trial {} out of {}. Delay start of {} milliseconds".format(self.current_trial_value, self.trials_value, value))
+                self.terminal.displayText()
+                self.current_ds_value = value
+      
             # motor and sensor signals
             elif value == 'MO': 
                 self.terminal.storeText("Trial {} out of {}. Motor activated".format(self.current_trial_value, self.trials_value))
@@ -330,23 +343,39 @@ class ControlPanelWidget(QWidget):
          
             # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse
             elif value == 'PR' or value == 'OR' or value == 'TR' or value == 'SR':
+                if self.vds_name == "Test":
+                    if 25 >= self.current_trial_value > 0:
+                        dict_key = "3is"
+                    elif 95 >= self.current_trial_value > 25:
+                        if self.current_ds_value == "6000":
+                            dict_key = "6s"
+                        else:
+                            dict_key = "12s"
+                    else:
+                        dict_key = "3fs"
+
                 if value == 'PR':
                     self.register_values[0] = self.register_values[0] + 1
+                    self.test_register_values[dict_key][0] = self.test_register_values[dict_key][0] + 1
                     response = "Premature response"         
                 elif value == 'OR':
+                    print(dict_key)
+                    print(self.test_register_values)
                     self.register_values[1] = self.register_values[1] + 1
+                    self.test_register_values[dict_key][1] =  self.test_register_values[dict_key][1] + 1
                     response = "Omission response" 
                 elif value == 'TR':
                     self.register_values[2] = self.register_values[2] + 1
+                    self.test_register_values[dict_key][2] = self.test_register_values[dict_key][2] + 1
                     response = "Timed response" 
                 elif value == 'SR':
                     self.register_values[3] = self.register_values[3] + 1
+                    self.test_register_values[dict_key][3] =  self.test_register_values[dict_key][3] + 1
                     response = "Perseverant response" 
 
                 self.barplot.bar_plot(self.register_values)
                 self.terminal.storeText("Trial {} out of {}. {}".format(self.current_trial_value, self.trials_value, response))
                 self.terminal.displayText()
-
 
             # trial end signal
             elif value == 'TE':
@@ -354,7 +383,7 @@ class ControlPanelWidget(QWidget):
                 self.terminal.displayText()
                 self.current_trial_value = self.current_trial_value + 1
                 if (self.current_trial_value > self.trials_value) or self.end_trial_by_timer:
-                    self.serialThread.end_trial(datetime.now(), self.register_values)
+                    self.serialThread.end_trial(datetime.now(), self.register_values, self.test_register_values)
                     self.terminal.storeText("####### The experiment ended! #######") 
                     self.terminal.displayText()
                     self.timer.stop()

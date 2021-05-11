@@ -39,9 +39,6 @@ unsigned long experimentDuration = 0;
 // serial read value
 String serialRead = "";
 
-// train or test
-String experimentRunning = "";
-
 // motor time variables
 unsigned long timeDelayFeederSensor = 0;
 unsigned long feederDelayMs = 1000;
@@ -263,12 +260,11 @@ void loop() {
     // se sensor direita (RS) ativado, Premature Response
     // como nao ha castigo por premature response no test meter aqui uma flag
     // e criar tambem uma variavel que pode ser 6 ou 12s entre os 25 a 95 trials
-    if ( experimentRunning == "test" and (currentTrial <= 95) and (currentTrial>25)) {
+    if (experimentRunning == "test" and  95 > currentTrial >= 70) {
       delayStartValue = random(0, 2);
       if (delayStartValue == 0) {
         delayStartValue = 6000;
         } else {delayStartValue = 12000;}
-        Serial.println(delayStartValue);      
     } else {delayStartValue = 3000;}
 
     while (millis() < currentDelayStartTimestamp + delayStartValue) {
@@ -287,8 +283,8 @@ void loop() {
           TO_start();
           //voltar a ligar a luz apos acabar castigo
           house_light_on();
-          currentTrial += 1;
           Serial.println("TE");
+          currentTrial = currentTrial + 1;
        } else if (experimentRunning == "test"){
           Serial.println("PR");
           while (check_right_sensor_activity() == 0){} // se o rato fica no sensor da direita a experiencia nao avanca!!!! Pode ser um problema???  
@@ -334,8 +330,8 @@ void loop() {
             }
           }
           left_light_off();
-          currentTrial += 1;
           Serial.println("TE");
+          currentTrial = currentTrial + 1;
           ITI_start();
           
           break; //get out of the 60 second loop
@@ -350,8 +346,8 @@ void loop() {
         //TO_start em loop de 3 segundos ate o sensor nao detetar nada
         TO_start();
         house_light_on();
-        currentTrial += 1;
         Serial.println("TE");
+        currentTrial = currentTrial + 1;
       }    
     }
   }
