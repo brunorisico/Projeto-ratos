@@ -224,7 +224,7 @@ void loop() {
     check_right_sensor_activity();
 
     house_light_on();
-    //motor_step_and_detect();
+    motor_step_and_detect();
     left_light_on();
 
     while (millis() < arduinoStartedTimestamp + 5000) {
@@ -311,7 +311,7 @@ void loop() {
             
           while (check_right_sensor_activity() == 0){} // espera para que o sensor right (3) seja inativado
           right_light_off();
-          //motor_step_and_detect();
+          motor_step_and_detect();
           left_light_on();
 
           // feeding time start

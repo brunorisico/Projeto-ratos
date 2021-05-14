@@ -86,7 +86,7 @@ class SerialThread(QThread):
                             elif self.buffer == 'LSA':
                                 self.left_sensor_activations = self.left_sensor_activations + 1
                             elif self.buffer == 'FSA':
-                                self.feeder_sensor_activations = self.feeder_sensor_activation + 1
+                                self.feeder_sensor_activations = self.feeder_sensor_activations + 1
 
                             self.signal.emit(self.buffer)
                             self.buffer = ""

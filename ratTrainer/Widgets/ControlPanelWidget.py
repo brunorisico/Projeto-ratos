@@ -330,11 +330,11 @@ class ControlPanelWidget(QWidget):
                     self.terminal.displayText()
 
             elif value == "RTS":
-                self.terminal.storeText("Trial {} out of {}. Response time started started".format(self.current_trial_value, self.trials_value))
+                self.terminal.storeText("Trial {} out of {}. Response time started".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
 
             elif value == "FTS":
-                self.terminal.storeText("Trial {} out of {}. Feeding time started started".format(self.current_trial_value, self.trials_value))
+                self.terminal.storeText("Trial {} out of {}. Feeding time started".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
             
             elif value == "TO":
@@ -356,21 +356,23 @@ class ControlPanelWidget(QWidget):
 
                 if value == 'PR':
                     self.register_values[0] = self.register_values[0] + 1
-                    self.test_register_values[dict_key][0] = self.test_register_values[dict_key][0] + 1
+                    if self.vds_name == "Test":
+                        self.test_register_values[dict_key][0] = self.test_register_values[dict_key][0] + 1
                     response = "Premature response"         
                 elif value == 'OR':
-                    print(dict_key)
-                    print(self.test_register_values)
                     self.register_values[1] = self.register_values[1] + 1
-                    self.test_register_values[dict_key][1] =  self.test_register_values[dict_key][1] + 1
+                    if self.vds_name == "Test":
+                        self.test_register_values[dict_key][1] =  self.test_register_values[dict_key][1] + 1
                     response = "Omission response" 
                 elif value == 'TR':
                     self.register_values[2] = self.register_values[2] + 1
-                    self.test_register_values[dict_key][2] = self.test_register_values[dict_key][2] + 1
+                    if self.vds_name == "Test":
+                        self.test_register_values[dict_key][2] = self.test_register_values[dict_key][2] + 1
                     response = "Timed response" 
                 elif value == 'SR':
                     self.register_values[3] = self.register_values[3] + 1
-                    self.test_register_values[dict_key][3] =  self.test_register_values[dict_key][3] + 1
+                    if self.vds_name == "Test":
+                        self.test_register_values[dict_key][3] =  self.test_register_values[dict_key][3] + 1
                     response = "Perseverant response" 
 
                 self.barplot.bar_plot(self.register_values)
