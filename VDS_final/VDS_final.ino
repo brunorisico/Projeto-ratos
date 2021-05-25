@@ -16,6 +16,9 @@ int sensorStateFeeder = 1;
 int sensorStateLeftHole = 1, previousSensorStateLeftHole = 0;
 int sensorStateRightHole = 1, previousSensorStateRightHole = 0;
 
+bool fiveSecondleftSensorFlag = false;
+bool fiveSecondRightSensorFlag = false;
+
 // timestamp variables
 unsigned long arduinoStartedTimestamp = 0;
 unsigned long currentItisStartTimestamp = 0;
@@ -23,6 +26,12 @@ unsigned long currentDelayStartTimestamp = 0;
 unsigned long currentTimeoutStartTimestamp = 0;
 unsigned long currentResponseTimeStartTimestamp = 0;
 unsigned long currentFeedingTimeStartTimestamp = 0;
+
+unsigned long leftSensorCheckTimestamp = 0;
+unsigned long currentLeftSensorActivatedTimestamp = 0;
+
+unsigned long rightSensorCheckTimestamp = 0;
+unsigned long currentRightSensorActivatedTimestamp = 0;
 
 // stage flags
 bool delayStarted = false; // fica verdadeiro depois do ITIS
@@ -129,16 +138,32 @@ void motor_step_and_detect() {
   }  
 }
 
+
 bool check_left_sensor_activity() {
   sensorStateLeftHole = digitalRead(LEFT_HOLE_SENSOR_PIN);
-  // se rato no sensor --> sensor inter devolve 0 -->  sensor true
+  leftSensorCheckTimestamp = millis();
+
+  // ve se o rato esta no sensor > 5000 ms
+  if (fiveSecondleftSensorFlag && ( (leftSensorCheckTimestamp - currentLeftSensorActivatedTimestamp) > 5000)) {
+    Serial.println("LS5");
+    // mais 5 segundos antes de enviar outro aviso...
+    currentLeftSensorActivatedTimestamp = millis();
+  }
+
+  // se rato no sensor --> sensor devolve 0 --> sensor true
   if (!sensorStateLeftHole && previousSensorStateLeftHole) {
     Serial.println("LSA");
+
+    //estas 2 linas servem para ver se o rato nao estao no sensor durante 5s
+    currentLeftSensorActivatedTimestamp = millis();
+    fiveSecondleftSensorFlag = true;
+
     previousSensorStateLeftHole = sensorStateLeftHole; 
     return true;
    }
   if (sensorStateLeftHole && !previousSensorStateLeftHole) {
     Serial.println("LSR");
+    fiveSecondleftSensorFlag = false;
     previousSensorStateLeftHole = sensorStateLeftHole; 
     return false;
   } 
@@ -146,13 +171,28 @@ bool check_left_sensor_activity() {
 
 bool check_right_sensor_activity() {
   sensorStateRightHole = digitalRead(RIGHT_HOLE_SENSOR_PIN);
+  rightSensorCheckTimestamp = millis();
+ 
+  // ve se o rato esta no sensor > 5000 ms
+  if (fiveSecondRightSensorFlag && ((rightSensorCheckTimestamp - currentRightSensorActivatedTimestamp) > 5000)) {
+    Serial.println("RS5");
+    // mais 5 segundos antes de enviar outro aviso...
+    currentRightSensorActivatedTimestamp = millis();
+  }
+
   if (!sensorStateRightHole && previousSensorStateRightHole) {
     Serial.println("RSA");
+
+    currentRightSensorActivatedTimestamp = millis();
+    fiveSecondRightSensorFlag = true;
+
     previousSensorStateRightHole = sensorStateRightHole; 
     return true;
   }
   if (sensorStateRightHole && !previousSensorStateRightHole) {
     Serial.println("RSR");
+
+    fiveSecondRightSensorFlag = false;
     previousSensorStateRightHole = sensorStateRightHole; 
     return false;
   }  
@@ -267,8 +307,8 @@ void loop() {
       delayStartValue = random(0, 2);
       if (delayStartValue == 0) {
         delayStartValue = 6000;
-        } else {delayStartValue = 12000;}
-        Serial.println(delayStartValue);      
+      } else {delayStartValue = 12000;}
+      Serial.println(delayStartValue);      
     } else {delayStartValue = 3000;}
 
     while (millis() < currentDelayStartTimestamp + delayStartValue) {

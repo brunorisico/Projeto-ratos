@@ -315,7 +315,7 @@ class ControlPanelWidget(QWidget):
             
             elif value == 'FSR':
                 self.feeder_sensor.set_status(True)
-                self.terminal.storeText("Trial {} out of {}. Feeder sensor activated".format(self.current_trial_value, self.trials_value))
+                self.terminal.storeText("Trial {} out of {}. Feeder sensor restored".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
 
             elif value == 'FSF':
@@ -339,6 +339,14 @@ class ControlPanelWidget(QWidget):
             
             elif value == "TO":
                 self.terminal.storeText("Trial {} out of {}. Timeout started".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == "LS5":
+                self.terminal.storeText("Trial {} out of {}. LEFT SENSOR ACTIVATED FOR LONGER THAN FIVE SECONDS!".format(self.current_trial_value, self.trials_value))
+                self.terminal.displayText()
+
+            elif value == "RS5":
+                self.terminal.storeText("Trial {} out of {}. RIGHT SENSOR ACTIVATED FOR LONGER THAN FIVE SECONDS!".format(self.current_trial_value, self.trials_value))
                 self.terminal.displayText()
          
             # when the trial ends PRemature response - OmissionResponse - TimeResponse - preServeranceResponse

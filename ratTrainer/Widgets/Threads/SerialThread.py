@@ -48,7 +48,7 @@ class SerialThread(QThread):
                                  'ITIS', 'DS', 'MO',
                                  'FSA', 'FSR', 'FSF', 'LSA',
                                  'LSR', 'RSA', 'RSR', 
-                                 'SA', 'TO', 'RTS', 'FTS', 'TE', 'ART', '1', '2', '3', '4']
+                                 'SA', 'TO', 'RTS', 'FTS', 'TE', 'ART', '1', '2', '3', '4','LS5', 'RS5']
 
     def run(self):
         loading = ""
@@ -88,6 +88,7 @@ class SerialThread(QThread):
                             elif self.buffer == 'FSA':
                                 self.feeder_sensor_activations = self.feeder_sensor_activations + 1
 
+                            print(self.buffer)
                             self.signal.emit(self.buffer)
                             self.buffer = ""
 
@@ -99,7 +100,7 @@ class SerialThread(QThread):
         self.start_signal = True
 
     def end_trial(self, date_end, data, test_detailed_data):
-        print(test_detailed_data)
+        #print(test_detailed_data)
         self.end_signal = True
 
         # current session detailed information in a new xlsx file
@@ -110,7 +111,7 @@ class SerialThread(QThread):
             sessions_workbook = load_workbook(filename="sessions.xlsx")
             sheet = sessions_workbook.active
 
-            data_to_sheet = [self.vds_name, self.arduino_started_timestamp, date_end, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations, self.trial-1]
+            data_to_sheet = [self.vds_name, self.arduino_started_timestamp, date_end, self.trial-1, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations]
             data_to_sheet.extend(data)
 
             if self.vds_name == "Test":
@@ -123,7 +124,7 @@ class SerialThread(QThread):
             backup_session_workbook = Workbook()
             sheet = backup_session_workbook.active
             
-            data_to_sheet = [self.vds_name, self.arduino_started_timestamp, date_end, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations, self.trial-1]
+            data_to_sheet = [self.vds_name, self.arduino_started_timestamp, date_end, self.trial-1, self.right_sensor_activations, self.left_sensor_activations, self.feeder_sensor_activations]
             data_to_sheet.extend(data)
 
             if self.vds_name == "Test":
