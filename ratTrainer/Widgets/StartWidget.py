@@ -16,8 +16,6 @@ from PyQt5.QtWidgets import  QGridLayout, QWidget, QPushButton, QComboBox, QLabe
 import serial.tools.list_ports
 import serial
 
-import time
-
 class StartWidget(QWidget):
     """ 
     main interface display with start, settings and quit button
@@ -32,8 +30,6 @@ class StartWidget(QWidget):
         self.selected_com_port = ""
 
         # default values for trials and the timer (in seconds!) and VDS used
-        #self.number_of_trials = 100
-        #self.timer = 1800
         self.number_of_trials = 100
         self.timer = 1800
         self.VDS = "Training"

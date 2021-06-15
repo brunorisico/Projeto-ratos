@@ -7,8 +7,8 @@ last modified: 07-05-2021 16:15
 Control panel
 """
 
-from PyQt5.QtWidgets import QMainWindow, QTextEdit, QScrollArea, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QComboBox, QLabel, QSplitter, QGroupBox, QStyle, QGridLayout, QSizePolicy
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtWidgets import QTextEdit, QScrollArea, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QComboBox, QLabel, QSplitter, QGroupBox, QStyle, QGridLayout, QSizePolicy
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QTimer,QDateTime
 
 from pyqt_led import Led
