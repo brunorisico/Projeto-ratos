@@ -331,7 +331,7 @@ void loop() {
           Serial.println("TE");
        } else if (experimentRunning == "test"){
           Serial.println("PR");
-          while (check_right_sensor_activity() == 0){} // se o rato fica no sensor da direita a experiencia nao avanca!!!! Pode ser um problema???  
+          while (check_right_sensor_activity() == 0){} // se o rato fica no sensor da direita...
         }
      }
     }
